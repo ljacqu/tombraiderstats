@@ -1,0 +1,32 @@
+TRU walktrhough index different layout
+
+
+http://tombraiders.net/stella/walks/TRUBwalk/02temple.html
+mentions mummies twice ("seventh mummy" etc.)
+
+phrasing, e.g. in http://tombraiders.net/stella/walks/TRGMwalk/05vegas.html
+"goon with the club", "nasty guy with the club", "enemy with a club", "4 club-
+wielding goons" ...
+
+loading the walkthrough pages also loads the images with wrong path (404)
+
+http://tombraiders.net/stella/walks/TRLAwalk/tr3gold5.html
+"2 more boxes of shells" 
+
+http://tombraiders.net/stella/walks/TRLAwalk/tr3gold4.html
+"2 huge mutant fish" vs. "2 mutant fish"
+
+http://tombraiders.net/stella/walks/TR4walk/angkorwat.html
+"wild boar" vs. "2 more boars"
+
+
+TR5: secrets annotated twice
+TRA: relics/rubbing rewards annotated twice
+http://tombraiders.net/stella/walks/TR5walk/base.html
+<item>golden rose</item> (<item>secret #1</item>, ...)
+
+capitalisation?
+
+hazards sometimes in prose
+http://tombraiders.net/stella/walks/TR7walk/05kazakhstan.html
+"Lara will be eletrocuted"

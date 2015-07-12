@@ -1,12 +1,7 @@
 // Test what links are matched
 $('[class^="walk-table"] a[href^="walks/"]').attr('style', 'color: red');
 
-// cut the BS ;D
-//$('image, iframe').fadeOut();
-
-
 var classesToAggregate = ['enemy', 'item', 'secret', 'gold', 'silver'];
-
 
 /**
  * Takes the URL to a walkthrough and returns the file name only, without the
@@ -53,8 +48,8 @@ var displayDataInContainer = function(totalData, clazz, containerId) {
     section = $(sectionSelector);
   }
   section.hide();
-  section.html('<h2>' + clazz.charAt(0).toUpperCase() + clazz.substr(1) 
-    + '</h2> <table></table> </div>');
+  section.html('<h2>' + clazz.charAt(0).toUpperCase() + clazz.substr(1) + 
+    '</h2> <table></table> </div>');
   addDataToTable(section.find('table'), totalData, clazz);
   section.find('h2').click(function() {
     section.find('table').toggle();

@@ -1,6 +1,7 @@
 var plurals = {
   gunmen: 'gunman',
   men: 'men',
+  mummies: 'mummy',
   switches: 'switch',
   tribesmen: 'tribesman',
   wolves: 'wolf'
@@ -61,7 +62,8 @@ var getSemanticInfo = function(extractedName) {
  * @returns {RegExp} pattern to recognize superfluous occurrences
  */
 var getCardinalRegexp = function() {
-  var cardinalWords = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+  var cardinalWords = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth',
+    'seventh', 'eighth', 'ninth', 'tenth'];
   var articles = ['the', 'a'];
   var adverbs = ['more', 'additional', 'another', 'sets of', 'boxes of', 
   'bunches of', 'bundles of'];

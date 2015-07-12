@@ -1,3 +1,35 @@
 Possible CSS classes to examine
 
-item, enemy, movable, hazard, crystal
+item, enemy, movable, hazard, 
+
+crystal (TR1,3, AOD: for upgrades, Legend, TRA: checkpoint), friendly
+
+TR2: silver, gold, jade
+
+Legend: bronze (reward)
+Legend: silver (reward)
+Legend: gold (reward)
+
+TRU: gold (relic)
+  silver (treasure)
+
+TRA: rubbing (Wii reward)
+  artifact
+  relic
+
+
+Tomb Raider (2013):
+  objective
+  document
+  salvage
+  relic
+  challenge
+  gps
+  map
+
+Guardian of light/Temple of Osiris:
+  red
+  gem
+  ammo
+  gold (artifact)
+  bronze (relic)
