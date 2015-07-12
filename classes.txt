@@ -1,0 +1,3 @@
+Possible CSS classes to examine
+
+item, enemy, movable, hazard, crystal
