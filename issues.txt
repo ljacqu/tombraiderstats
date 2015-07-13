@@ -10,6 +10,12 @@ wielding goons" ...
 
 loading the walkthrough pages also loads the images with wrong path (404)
 
+h2.click()'s toggle()s not synchronized with h1.click()'s toggle()
+
+table display on main page
+
+hide empty subtitles?
+
 http://tombraiders.net/stella/walks/TRLAwalk/tr3gold5.html
 "2 more boxes of shells" 
 
@@ -30,3 +36,9 @@ capitalisation?
 hazards sometimes in prose
 http://tombraiders.net/stella/walks/TR7walk/05kazakhstan.html
 "Lara will be eletrocuted"
+
+http://tombraiders.net/stella/walks/TR3walk/A3-tinnos.html + aldwych
+ledge f, switch #4, button a
+
+http://tombraiders.net/stella/walks/TR3walk/A3-tinnos.html
+<item>x</item> <-- color for map legend
