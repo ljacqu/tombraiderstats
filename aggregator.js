@@ -24,7 +24,7 @@ ljacqu.config = function() {
 
 
 /* ---------------------------------------------------
- * jQuery selectors for page and result elements
+ * jQuery selectors for existing page elements
  * --------------------------------------------------- */
 ljacqu.selector = function() {
   /**
@@ -284,11 +284,11 @@ ljacqu.document = function() {
    */
   var loadAllWalkthroughs = function(processFn) {
     $.each($(ljacqu.selector.walkthroughLinks()), function() {
-      ljacqu.display.setupDataContainer($(this));
       var url = $(this).attr('href');
+      var aElem = $(this);
 
       $.get(url, {}, function(data) {
-        processFn(data, $(this));
+        processFn(data, aElem);
       }, 'html');
     });
   };
@@ -413,7 +413,6 @@ ljacqu.display = function() {
     return ' ' + htmlResult;
   };
   
-  
   /**
    * Adds rows to a given table based on an object. Left cell is the object's
    * key, while the right cell is the object's value for each entry.
@@ -438,7 +437,6 @@ ljacqu.display = function() {
   };
   
   var displayEntities = function(entityList, clazz, aElem) {
-    //aElem = aElem || false;
     var section = ljacqu.container.getSection(clazz, aElem);
     var sectionTable = section.find('table');
     resetTable(sectionTable);
@@ -472,10 +470,7 @@ ljacqu.run = function() {
   };
   
   var overviewPageRunner = function() {
-    ljacqu.document.loadAllWalkthroughs(
-      function (data, aElem) {
-        processLoadedWalkthrough(data, ljacqu.display.getContainerId(aElem));
-      });
+    ljacqu.document.loadAllWalkthroughs(processLoadedWalkthrough);
   };
   
   return {
@@ -485,6 +480,6 @@ ljacqu.run = function() {
 }();
 
 ljacqu.jquery.loadJquery(function() {
-  ljacqu.run.singlePageRunner();
-  //ljacqu.run.overviewPageRunner();
+  //ljacqu.run.singlePageRunner();
+  ljacqu.run.overviewPageRunner();
 });
