@@ -24,15 +24,45 @@ ljacqu.config = function() {
 
 
 /* ---------------------------------------------------
+ * jQuery selectors for page and result elements
+ * --------------------------------------------------- */
+ljacqu.selector = function() {
+  /**
+   * Selector for all entities we want to extract
+   * @param {String} clazz The entity class to match
+   * @returns {String} The jQuery selector string
+   */
+  var entityClass = function(clazz) {
+    return 'span.' + clazz;
+  };
+  
+  /**
+   * Selector for all links on an overview page leading to the walkthrough
+   * pages.
+   * @returns {String} The jQuery selector string for all relevant <a> elements
+   */
+  var walkthroughLinks = function() {
+    return '[class^="walk-table"] a[href^="walks/"]';
+  };
+  
+  return {
+    entityClass: entityClass,
+    walkthroughLinks: walkthroughLinks
+  };
+}();
+
+
+/* ---------------------------------------------------
  * jQuery-related utility
  * --------------------------------------------------- */
 ljacqu.jquery = function() {
   /**
    * Waits on jQuery to load. Based on
    * <http://neighborhood.org/core/sample/jquery/append-to-head.htm>.
-   * @param {Callback} whenLoaded The function to execute once jQuery has 
+   * @param {Callback} whenLoaded The function to execute once jQuery has
    *  loaded. This function is also called when jQuery did not have to be loaded
-   *  manually.
+   *  manually, i.e. the function is always called exactly once (unless jQuery
+   *  has to be loaded and there was an error).
    */
   var loadJquery = function(whenLoaded) {
     var attemptCount = 0;
@@ -165,9 +195,9 @@ ljacqu.texthelper = function() {
   };
 
   /**
-   * Merges entries of an object (entityName: totalNumber) where the entity name
-   * is the same, e.g. "more dogs", "a second dog" with "dog".
-   * @param {String} entity The entity name to verify (potentially merge).
+   * Attempts to merge a given entry with another one if the same name exists in
+   * singular or otherwise similar (e.g. "a second tiger" and "tiger").
+   * @param {String} entity The entity name to examine (potentially merge)
    * @param {Object} entityList The entities discovered as object, where
    *  the key is the extracted name and the value the total number.
    * @returns {Object} Merged object
@@ -189,6 +219,14 @@ ljacqu.texthelper = function() {
     return entityList;
   };
   
+  /**
+   * Merges entity names (as keys in an object) together which designate the
+   * same type of entity but have a different name (plural vs. singular,
+   * "another goon" vs. "goon" etc.).
+   * @param {Object} entityList The list of found entities where the key is the
+   * entity name and the value the total number of occurrences.
+   * @returns {Object} A merged entity list
+   */
   var mergeEntities = function(entityList) {
     var mergedList = entityList;
     for (var key in entityList) {
@@ -200,9 +238,7 @@ ljacqu.texthelper = function() {
   };
   
   return {
-    sanitizeEntityName: sanitizeEntityName,
     getSemanticInfo: getSemanticInfo,
-    pluralToSingular: pluralToSingular,
     mergeEntities: mergeEntities
   };
 }();
@@ -224,7 +260,7 @@ ljacqu.document = function() {
     source = source || document;
     var types = {};
     // Specifying span allows us to use the same class on <td>, which looks cool
-    $.each($("span." + clazz, source), function() {
+    $.each($(ljacqu.selector.entityClass(clazz), source), function() {
       var entry = ljacqu.texthelper.getSemanticInfo($(this).text());
       if (entry.name === '') {
         return;
@@ -243,16 +279,16 @@ ljacqu.document = function() {
   /**
    * Extract all walkthroughs from a page (for table overviews).
    * @param {Callback} processFn Function to process the loaded document (HTML),
-   *  taking the page URL as second argument.
+   *  taking the <a> element as second parameter.
    * @returns {undefined}
    */
   var loadAllWalkthroughs = function(processFn) {
-    $.each($('[class^="walk-table"] a[href^="walks/"]'), function() {
+    $.each($(ljacqu.selector.walkthroughLinks()), function() {
       ljacqu.display.setupDataContainer($(this));
       var url = $(this).attr('href');
 
       $.get(url, {}, function(data) {
-        processFn(data, url);
+        processFn(data, $(this));
       }, 'html');
     });
   };
@@ -265,102 +301,152 @@ ljacqu.document = function() {
 
 
 /* ---------------------------------------------------
- * Display of results
+ * Container module (for result data)
  * --------------------------------------------------- */
-ljacqu.display = function() {
-  /**
-   * Adds rows to a given table based on an object. Left cell is the object's
-   * key, while the right cell is the object's value for each entry.
-   * @param {jQuery} table jQuery-selected table object to modify
-   * @param {Object} entityList The object to display in the table
-   * @param {type} clazz TODO ----------------
-   */
-  var addDataToTable = function(table, entityList, clazz) {
-    for (var key in entityList) {
-      if (entityList.hasOwnProperty(key)) {
-        table.append($('<tr>')
-          .append('<td class="' + clazz + '">' + key + '</td>' +
-          '<td style="text-align: right">' + entityList[key] + '</td>')
-        );
+ljacqu.container = function() {
+  
+  var getBaseElement = function() {
+    // overview page has #wrap, single page has #LayoutDiv1
+    var base = $('#wrap');
+    if (base.length === 0) {
+      base = $('#LayoutDiv1');
+      if (base.length === 0) {
+        throw new Error('Could not get base element!');
       }
     }
+    return base;
   };
   
   var ucfirst = function(text) {
     return text.charAt(0).toUpperCase() + text.substr(1);
   };
   
-  /**
-   * Displays the result for a single page
-   */
-  var displayEntities = function(entityList, clazz) {
-    var containerId = clazz + 'Total';
-    var container = $('#' + containerId);
-    if (container.length === 0) {
-      $('#LayoutDiv1').before('<div id="' + containerId + '"></div>');
-      container = $('#' + containerId);
-    } else {
-      container.html('');
-    }
-    container.hide();
-    container.html('<h2>' + ucfirst(clazz) + ' total</h2>' + 
-      '<table><th>Type</th><th>Total</th></table>');
-    var containerTable = container.find('table');
-    addDataToTable(containerTable, entityList, clazz);
-    container.fadeIn();
-  };
-  
-  /**
-   * Creates a container ID based on the the URL to a walkthrough page.
-   * @param {string} url
-   * @returns {string} ID based on shortened page name
-   */
   var getContainerId = function(url) {
     var folders = url.split('/');
-    return 'p' + folders[ folders.length - 1 ].split('.')[0];
+    return 'ctr_' + folders[ folders.length - 1 ].split('.')[0];
   };
   
-  var setupDataContainer = function(elem) {
+  var createContainer = function(id, title) {
+    getBaseElement().before('<div id="' + id + '"><h1>' + title + 
+      '</h1></div>');
+    var container = $('#' + id);
+    $('#' + id).find('h1').click(function() {
+      container.find('h2, table').toggle();
+    });
+    return container;
+  };
+  
+  var createSinglePageElem = function() {
+    return {
+      attr: function() {
+        return 'results';
+      },
+      text: function() {
+        return 'Statistics';
+      }
+    };
+  };
+  
+  var getContainer = function(elem) {
     var containerId = getContainerId(elem.attr('href'));
     var container = $('#' + containerId);
-
     if (container.length === 0) {
-      $('#wrap').before('<div id="' + containerId + '"><h1>' + elem.text() + 
-        '</h1></div>');
-      container = $('#' + containerId);
-      $('#' + containerId).find('h1').click(function() {
-        container.find('h2, table').toggle();
-      });
+      container = createContainer(containerId, elem.text());
+    }
+    return container;
+  };
+  
+  var getSectionClass = function(clazz) {
+    return 'sec_' + clazz;
+  };
+  
+  var createSection = function(sectionClass, aElem, title) {
+    var container = getContainer(aElem);
+    container.append('<div class="' + sectionClass + '">' + 
+      '<h2>' + title + '</h2><table></table></div>');
+  };
+  
+  var getSection = function(clazz, aElem) {
+    aElem = aElem || createSinglePageElem();
+    var container = getContainer(aElem);
+    var sectionClass = getSectionClass(clazz);
+    var section = container.find('.' + sectionClass);
+    if (section.length === 0) {
+      createSection(sectionClass, aElem, ucfirst(clazz));
+      section = container.find('.' + sectionClass);
+    }
+    return section;
+  };
+  
+  
+  return {
+    //getContainer: getContainer,
+    //getContainerId: getContainerId,
+    getSection: getSection
+  };  
+}();
+
+
+/* ---------------------------------------------------
+ * Display results
+ * --------------------------------------------------- */
+ljacqu.display = function() {
+  /**
+   * Helper function to turn a "style param" object into HTML. The object may
+   * have a key "style" with content to put into a style attribute or a "class"
+   * key for the content of a class attribute. Double quotes must be escaped.
+   * @param {Object} styleParams The style paramters
+   * @returns {String} The generated attribute(s) based on styleParams
+   */
+  var styleParamsToHtml = function(styleParams) {
+    var htmlResult = '';
+    if (styleParams.html) {
+      htmlResult += 'style="' + styleParams.html + '"';
+    }
+    if (styleParams.class) {
+      htmlResult += ' class="' + styleParams.class + '"';
+    }
+    htmlResult = htmlResult.trim();
+    if (htmlResult.length === 0) {
+      return '';
+    }
+    return ' ' + htmlResult;
+  };
+  
+  
+  /**
+   * Adds rows to a given table based on an object. Left cell is the object's
+   * key, while the right cell is the object's value for each entry.
+   * @param {jQuery} table jQuery-selected table object to modify
+   * @param {Object} entityList The object to display in the table
+   * @param {Object} styleParam Object specifying the style of the table row;
+   *  can have keys 'style' with CSS and/or 'class' for CSS class.
+   */
+  var addDataToTable = function(table, entityList, styleParams) {
+    for (var key in entityList) {
+      if (entityList.hasOwnProperty(key)) {
+        table.append($('<tr' + styleParamsToHtml(styleParams) + '>')
+          .append('<td>' + key + '</td>' + '<td style="text-align: right">' + 
+            entityList[key] + '</td>')
+        );
+      }
     }
   };
-
-  var displayDataInContainer = function(totalData, clazz, containerId) {
-    var container = $('#' + containerId);
-    var sectionClass = 'p' + clazz;
-    var sectionSelector = '#' + containerId + ' .' + sectionClass;
-
-    var section = $(sectionSelector);
-    if (section.length === 0) {
-      container.append('<div class="' + sectionClass + '"></div>');
-      section = $(sectionSelector);
-    }
-    section.hide();
-    section.html('<h2>' + clazz.charAt(0).toUpperCase() + clazz.substr(1) + 
-      '</h2> <table></table> </div>');
-    addDataToTable(section.find('table'), totalData, clazz);
-    section.find('h2').click(function() {
-      section.find('table').toggle();
-      return true;
-    });
-    section.fadeIn();
+  
+  var resetTable = function(table) {
+    table.html('<tr><th>Type</th><th>Total</th></tr>');
+  };
+  
+  var displayEntities = function(entityList, clazz, aElem) {
+    //aElem = aElem || false;
+    var section = ljacqu.container.getSection(clazz, aElem);
+    var sectionTable = section.find('table');
+    resetTable(sectionTable);
+    addDataToTable(sectionTable, entityList, {'class': clazz});
   };
   
   return {
-    addDataToTable: addDataToTable,
-    displayEntities: displayEntities,
-    displayDataInContainer: displayDataInContainer,
-    setupDataContainer: setupDataContainer,
-    getContainerId: getContainerId
+    displayEntities: displayEntities
   };
 }();
 
@@ -377,18 +463,18 @@ ljacqu.run = function() {
     }
   };
   
-  var processLoadedWalkthrough = function(data, containerId) {
+  var processLoadedWalkthrough = function(data, aElem) {
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
       var items = ljacqu.document.fetchEntities(currentClass, data);
-      ljacqu.display.displayDataInContainer(items, currentClass, containerId);
+      ljacqu.display.displayEntities(items, currentClass, aElem);
     }
   };
   
   var overviewPageRunner = function() {
     ljacqu.document.loadAllWalkthroughs(
-      function (data, url) {
-        processLoadedWalkthrough(data, ljacqu.display.getContainerId(url));
+      function (data, aElem) {
+        processLoadedWalkthrough(data, ljacqu.display.getContainerId(aElem));
       });
   };
   
@@ -399,6 +485,6 @@ ljacqu.run = function() {
 }();
 
 ljacqu.jquery.loadJquery(function() {
-  //ljacqu.run.singlePageRunner();
-  ljacqu.run.overviewPageRunner();
+  ljacqu.run.singlePageRunner();
+  //ljacqu.run.overviewPageRunner();
 });
