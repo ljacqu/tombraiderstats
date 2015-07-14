@@ -284,11 +284,16 @@ ljacqu.document = function() {
    */
   var loadAllWalkthroughs = function(processFn) {
     $.each($(ljacqu.selector.walkthroughLinks()), function() {
-      var url = $(this).attr('href');
       var aElem = $(this);
 
-      $.get(url, {}, function(data) {
-        processFn(data, aElem);
+      $.get(aElem.attr('href'), {}, function(data) {
+        // `data` is a string at this point but is parsed into a document if
+        // used as the context in a selector. This loads images (and with the
+        // wrong path at that) so we replace the tag with something else.
+        // Source: http://stackoverflow.com/questions/7587223/
+        data = data.replace(/<img/g, '<cheese');
+        var parsedDoc = $(data);
+        processFn(parsedDoc, aElem);
       }, 'html');
     });
   };
@@ -380,8 +385,6 @@ ljacqu.container = function() {
   
   
   return {
-    //getContainer: getContainer,
-    //getContainerId: getContainerId,
     getSection: getSection
   };  
 }();
@@ -418,7 +421,7 @@ ljacqu.display = function() {
    * key, while the right cell is the object's value for each entry.
    * @param {jQuery} table jQuery-selected table object to modify
    * @param {Object} entityList The object to display in the table
-   * @param {Object} styleParam Object specifying the style of the table row;
+   * @param {Object} styleParams Object specifying the style of the table row;
    *  can have keys 'style' with CSS and/or 'class' for CSS class.
    */
   var addDataToTable = function(table, entityList, styleParams) {

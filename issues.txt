@@ -8,8 +8,6 @@ phrasing, e.g. in http://tombraiders.net/stella/walks/TRGMwalk/05vegas.html
 "goon with the club", "nasty guy with the club", "enemy with a club", "4 club-
 wielding goons" ...
 
-loading the walkthrough pages also loads the images with wrong path (404)
-
 h2.click()'s toggle()s not synchronized with h1.click()'s toggle()
 
 table display on main page
