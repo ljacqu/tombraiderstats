@@ -291,9 +291,7 @@ ljacqu.document = function() {
         // used as the context in a selector. This loads images (and with the
         // wrong path at that) so we replace the tag with something else.
         // Source: http://stackoverflow.com/questions/7587223/
-        data = data.replace(/<img/g, '<cheese');
-        var parsedDoc = $(data);
-        processFn(parsedDoc, aElem);
+        processFn(data.replace(/<img/g, '<cheese'), aElem);
       }, 'html');
     });
   };
@@ -494,6 +492,7 @@ ljacqu.run = function() {
     overviewPageRunner: overviewPageRunner
   };
 }();
+
 
 ljacqu.jquery.loadJquery(function() {
   if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
