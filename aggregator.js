@@ -331,8 +331,9 @@ ljacqu.container = function() {
     return 'ctr_' + folders[ folders.length - 1 ].split('.')[0];
   };
   
-  var createContainer = function(id, title) {
-    getBaseElement().before('<div id="' + id + '"><h1>' + title + 
+  var createContainer = function(aElem) {
+    var id = getContainerId(aElem.attr('href'));
+    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text() + 
       '</h1></div>');
     var container = $('#' + id);
     $('#' + id).find('h1').click(function() {
@@ -352,11 +353,11 @@ ljacqu.container = function() {
     };
   };
   
-  var getContainer = function(elem) {
-    var containerId = getContainerId(elem.attr('href'));
+  var getContainer = function(aElem) {
+    var containerId = getContainerId(aElem.attr('href'));
     var container = $('#' + containerId);
     if (container.length === 0) {
-      container = createContainer(containerId, elem.text());
+      container = createContainer(aElem);
     }
     return container;
   };
@@ -383,9 +384,15 @@ ljacqu.container = function() {
     return section;
   };
   
+  var removeAll = function() {
+    getBaseElement().prevAll('div').remove();
+  };
+  
   
   return {
-    getSection: getSection
+    createContainer: createContainer,
+    getSection: getSection,
+    removeAll: removeAll
   };  
 }();
 
@@ -444,6 +451,9 @@ ljacqu.display = function() {
     var sectionTable = section.find('table');
     resetTable(sectionTable);
     addDataToTable(sectionTable, entityList, {'class': clazz});
+    if (sectionTable.find('td').length === 0) {
+      section.remove();
+    }
   };
   
   return {
@@ -473,7 +483,10 @@ ljacqu.run = function() {
   };
   
   var overviewPageRunner = function() {
-    ljacqu.document.loadAllWalkthroughs(processLoadedWalkthrough);
+    ljacqu.document.loadAllWalkthroughs(function(data, aElem) {
+      ljacqu.container.createContainer(aElem);
+      processLoadedWalkthrough(data, aElem);
+    });
   };
   
   return {
@@ -483,6 +496,9 @@ ljacqu.run = function() {
 }();
 
 ljacqu.jquery.loadJquery(function() {
-  //ljacqu.run.singlePageRunner();
-  ljacqu.run.overviewPageRunner();
+  if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
+    ljacqu.run.overviewPageRunner();
+  } else {
+    ljacqu.run.singlePageRunner();
+  }
 });
