@@ -288,11 +288,10 @@ ljacqu.document = function() {
  * --------------------------------------------------- */
 ljacqu.effects = function() {
   /**
-   * Overview page: simulate a click on the #toTop button, which will make the
-   * user scroll smoothly to our tables.
+   * Makes the user scroll to the top.
    */
   var scrollToTop = function() {
-    $('#toTop').click();
+    $("html, body").animate({ scrollTop: 0 }, "slow");
   };
   
   /**
@@ -466,8 +465,23 @@ ljacqu.display = function() {
     }
   };
   
+  var displayError = function(message) {
+    var errorBox = $('#agg_err');
+    if (errorBox.length === 0) {
+      $('body').prepend('<div id="agg_err" style="color:#300; display:block;' +
+        ' border:1px solid #900; background-color:#fee; padding:10px;' + 
+        ' margin:20px; z-index:2015; opacity:1"></div>');
+      errorBox = $('#agg_err');
+    }
+    errorBox.hide();
+    ljacqu.effects.scrollToTop();
+    errorBox.html(message);
+    errorBox.fadeIn();
+  };
+  
   return {
-    displayEntities: displayEntities
+    displayEntities: displayEntities,
+    displayError: displayError
   };
 }();
 
@@ -511,14 +525,31 @@ ljacqu.run = function() {
     });
   };
   
+  /**
+   * Ensure that the page is on tombraiders.net or www.tombraiders.net.
+   * @returns {boolean} True if the page is on tombraiders.net, false otherwise.
+   */
+  var checkWebsite = function() {
+    var isRightWebsite = window.location.href
+      .match(/^https?:\/\/(www\.)?tombraiders\.net(\/.*)?$/i);
+    if (!isRightWebsite) {
+      ljacqu.display.displayError('You are not on <b>tombraiders.net</b>');
+    }
+    return isRightWebsite;
+  };
+  
   return {
     processPage: processPage,
-    overviewPageRunner: overviewPageRunner
+    overviewPageRunner: overviewPageRunner,
+    checkWebsite: checkWebsite
   };
 }();
 
 
 ljacqu.jquery.loadJquery(function() {
+  if (!ljacqu.run.checkWebsite()) {
+    return;
+  }
   if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
     ljacqu.run.overviewPageRunner();
   } else {

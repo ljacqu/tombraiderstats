@@ -6,8 +6,6 @@ display tables on main page with better style
 
 Fix fetching of links in TRU overview
 
-Fix wrong order of levels in AOD overview mode
-
 h2.click()'s toggle()s not synchronized with h1.click()'s toggle()
 
 sections are hidden if they have no content -> should be only if no content for
