@@ -10,6 +10,7 @@ ljacqu.config = function() {
   var plurals = {
     gunmen: 'gunman',
     men: 'men',
+    mercenaries: 'mercenary',
     mummies: 'mummy',
     switches: 'switch',
     tribesmen: 'tribesman',
@@ -276,29 +277,40 @@ ljacqu.document = function() {
     );
   };
   
-  /**
-   * Extract all walkthroughs from a page (for table overviews).
-   * @param {Callback} processFn Function to process the loaded document (HTML),
-   *  taking the <a> element as second parameter.
-   * @returns {undefined}
-   */
-  var loadAllWalkthroughs = function(processFn) {
-    $.each($(ljacqu.selector.walkthroughLinks()), function() {
-      var aElem = $(this);
+  return {
+    fetchEntities: fetchEntities
+  };
+}();
 
-      $.get(aElem.attr('href'), {}, function(data) {
-        // `data` is a string at this point but is parsed into a document if
-        // used as the context in a selector. This loads images (and with the
-        // wrong path at that) so we replace the tag with something else.
-        // Source: http://stackoverflow.com/questions/7587223/
-        processFn(data.replace(/<img/g, '<cheese'), aElem);
-      }, 'html');
+
+/* ---------------------------------------------------
+ * Animation effects
+ * --------------------------------------------------- */
+ljacqu.effects = function() {
+  /**
+   * Overview page: simulate a click on the #toTop button, which will make the
+   * user scroll smoothly to our tables.
+   */
+  var scrollToTop = function() {
+    $('#toTop').click();
+  };
+  
+  /**
+   * Single page: move the top ad down a few paragraphs because the aggregation
+   * result is right above it otherwise.
+   */
+  var moveTopAd = function() {
+    var adBar = $('.adsense-flex-header:first');
+    adBar.fadeOut(function() {
+      $('div:first p.header1').parents('div:eq(1)')
+        .siblings('p:eq(2)').after(adBar);
+      adBar.fadeIn();
     });
   };
   
   return {
-    fetchEntities: fetchEntities,
-    loadAllWalkthroughs: loadAllWalkthroughs
+    moveTopAd: moveTopAd,
+    scrollToTop: scrollToTop
   };
 }();
 
@@ -464,31 +476,43 @@ ljacqu.display = function() {
  * Entry points
  * --------------------------------------------------- */
 ljacqu.run = function() {
-  var singlePageRunner = function() {
+  /**
+   * Entry point for single-page mode and for loaded walkthrough data.
+   * @param {?String} source The HTML to extract the entities from, or empty for
+   *  the current document.
+   * @param {?Jquery} aElem The jQuery selector for the linking <a> element of
+   *  the page we're processing (or empty for single page mode).
+   */
+  var processPage = function(source, aElem) {
+    source = source || false;
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
-      ljacqu.display.displayEntities(
-        ljacqu.document.fetchEntities(currentClass), currentClass);
+      var entities = ljacqu.document.fetchEntities(currentClass, source);
+      ljacqu.display.displayEntities(entities, currentClass, aElem);
     }
   };
   
-  var processLoadedWalkthrough = function(data, aElem) {
-    for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
-      var currentClass = ljacqu.config.classesToAggregate[i];
-      var items = ljacqu.document.fetchEntities(currentClass, data);
-      ljacqu.display.displayEntities(items, currentClass, aElem);
-    }
-  };
-  
+  /**
+   * Entry point for overview mode: fetches the links, sends GET requests and
+   * delegates the data to the other methods.
+   */
   var overviewPageRunner = function() {
-    ljacqu.document.loadAllWalkthroughs(function(data, aElem) {
+    $.each($(ljacqu.selector.walkthroughLinks()), function() {
+      var aElem = $(this);
       ljacqu.container.createContainer(aElem);
-      processLoadedWalkthrough(data, aElem);
+
+      $.get(aElem.attr('href'), {}, function(data) {
+        // `data` is a string at this point but is parsed into a document if
+        // used as the context in a selector. This loads images (and with the
+        // wrong path at that) so we replace the tag with something else.
+        // Source: http://stackoverflow.com/questions/7587223/
+        processPage(data.replace(/<img/g, '<cheese'), aElem);
+      }, 'html');
     });
   };
   
   return {
-    singlePageRunner: singlePageRunner,
+    processPage: processPage,
     overviewPageRunner: overviewPageRunner
   };
 }();
@@ -498,6 +522,6 @@ ljacqu.jquery.loadJquery(function() {
   if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
     ljacqu.run.overviewPageRunner();
   } else {
-    ljacqu.run.singlePageRunner();
+    ljacqu.run.processPage();
   }
 });
