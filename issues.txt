@@ -8,10 +8,18 @@ Fix fetching of links in TRU overview
 
 Add h2.click() toggle; synchronize with h1.click()'s toggle()
 
+Show total of section + grand total
+
+order by numbers
+
 http://tombraiders.net/stella/tomb2.html: Lvl 17 (Dragon Lair) not h1-toggable
 
 sections are hidden if they have no content -> should be only if no content for
 ANY level in overview mode
+
+add message if no entities found
+
+clean up (remove?) styleParams
 
 capitalization?
 

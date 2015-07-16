@@ -341,6 +341,11 @@ ljacqu.container = function() {
     return 'ctr_' + folders[ folders.length - 1 ].split('.')[0];
   };
   
+  /**
+   * Create a container for a given page.
+   * @param {aElem} aElem The aElem of a page
+   * @returns {jQuery} Selector of the page's container
+   */
   var createContainer = function(aElem) {
     var id = getContainerId(aElem.attr('href'));
     if ($('#' + id).length !== 0) {
@@ -355,17 +360,22 @@ ljacqu.container = function() {
     return container;
   };
   
+  /**
+   * Creates a dummy aElem object for single page mode.
+   * @returns {aElem} An aElem object to use in single page mode
+   */
   var createSinglePageElem = function() {
     return {
-      attr: function() {
-        return 'results';
-      },
-      text: function() {
-        return 'Statistics';
-      }
+      attr: function() { return 'results'; },
+      text: function() { return 'Statistics'; }
     };
   };
   
+  /**
+   * Gets the container of a page.
+   * @param {aElem} aElem The aElem object for a page
+   * @returns {jQuery} Selector for the page's container
+   */
   var getContainer = function(aElem) {
     var containerId = getContainerId(aElem.attr('href'));
     var container = $('#' + containerId);
@@ -385,6 +395,12 @@ ljacqu.container = function() {
       '<h2>' + title + '</h2><table></table></div>');
   };
   
+  /**
+   * Gets a section or creates it if it doesn't exist.
+   * @param {String} clazz The entity class to create a section for
+   * @param {aElem} aElem The aElem of the given page the section belongs to
+   * @returns {jQuery} Selector of the section
+   */
   var getSection = function(clazz, aElem) {
     aElem = aElem || createSinglePageElem();
     var container = getContainer(aElem);
@@ -397,6 +413,18 @@ ljacqu.container = function() {
     return section;
   };
   
+  /**
+   * Get all sections that display a certain entity class.
+   * @param {String} clazz The section classes to fetch
+   * @returns {jQuery} Selector with all the sections
+   */
+  var getAllSections = function(clazz) {
+    return $('div[id^="ctr"] div.sec_' + clazz);
+  };
+  
+  /**
+   * Removes all containers. Used for debug only.
+   */
   var removeAll = function() {
     getBaseElement().prevAll('div').remove();
   };
@@ -406,6 +434,7 @@ ljacqu.container = function() {
     createContainer: createContainer,
     getContainer: getContainer,
     getSection: getSection,
+    getAllSections: getAllSections,
     removeAll: removeAll
   };  
 }();
@@ -460,6 +489,12 @@ ljacqu.display = function() {
     table.html('<tr><th>Type</th><th>Total</th></tr>');
   };
   
+  /**
+   * Adds the elements of the entity list to the according section.
+   * @param {Object} entityList The list of found entities
+   * @param {String} clazz The class of the entities
+   * @param {aElem} aElem aElem object of the page
+   */
   var displayEntities = function(entityList, clazz, aElem) {
     var section = ljacqu.container.getSection(clazz, aElem);
     var sectionTable = section.find('table');
@@ -470,6 +505,10 @@ ljacqu.display = function() {
     }
   };
   
+  /**
+   * Creates an error box and displays a given error message.
+   * @param {String} message The error message to display
+   */
   var displayError = function(message) {
     var errorBox = $('#agg_err');
     if (errorBox.length === 0) {
