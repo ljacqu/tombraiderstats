@@ -15,10 +15,7 @@ ANY level in overview mode
 
 capitalization?
 
-Make md version of classes.txt
-
-check out https://help.github.com/articles/what-are-github-pages/
- (as used in https://github.com/zeman/perfmap)
+multiple walkthrough links to same page
 
 Detect if not on tombraiders.net / not on any walkthrough/overview page
 
