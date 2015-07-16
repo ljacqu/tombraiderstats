@@ -4,12 +4,13 @@ var ljacqu = {};
  * Configuration parameters 
  * --------------------------------------------------- */
 ljacqu.config = function() {
-  var classesToAggregate = ['enemy', 'item', 'secret', 'gold', 'silver'];
+  var classesToAggregate = ['enemy', 'item', 'hazard', 'secret', 'gold', 
+    'silver', 'friendly'];
   
   /** Custom plural to singular forms. */
   var plurals = {
     gunmen: 'gunman',
-    men: 'men',
+    men: 'man',
     mercenaries: 'mercenary',
     mummies: 'mummy',
     switches: 'switch',
@@ -342,6 +343,9 @@ ljacqu.container = function() {
   
   var createContainer = function(aElem) {
     var id = getContainerId(aElem.attr('href'));
+    if ($('#' + id).length !== 0) {
+      return $('#' + id);
+    }
     getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text() + 
       '</h1></div>');
     var container = $('#' + id);
@@ -400,6 +404,7 @@ ljacqu.container = function() {
   
   return {
     createContainer: createContainer,
+    getContainer: getContainer,
     getSection: getSection,
     removeAll: removeAll
   };  
@@ -506,16 +511,37 @@ ljacqu.run = function() {
     }
   };
   
+  var makeAElem = function(href, text) {
+    return {
+      attr: function() { return href; },
+      text: function() { return text; }
+    };
+  };
+  
   /**
    * Entry point for overview mode: fetches the links, sends GET requests and
    * delegates the data to the other methods.
    */
   var overviewPageRunner = function() {
+    var foundUrls = {};
     $.each($(ljacqu.selector.walkthroughLinks()), function() {
-      var aElem = $(this);
+      var urlWithoutHash = $(this).attr('href').split('#')[0];
+      var aElem = makeAElem(urlWithoutHash, $(this).text());
+      
+      if (typeof foundUrls[urlWithoutHash] !== 'undefined') {
+        var containerTitle = ljacqu.container.getContainer(aElem).find('h1');
+        // aggregator can be run many times, only append the additional title
+        // once --> the containers are permanent
+        if (containerTitle.text().indexOf(aElem.text()) === -1) {
+          containerTitle.append('<span style="font-size: 0.8em"> + ' + 
+            aElem.text() + '</span>');
+        }
+        return;
+      }
       ljacqu.container.createContainer(aElem);
+      foundUrls[urlWithoutHash] = true;
 
-      $.get(aElem.attr('href'), {}, function(data) {
+      $.get(urlWithoutHash, {}, function(data) {
         // `data` is a string at this point but is parsed into a document if
         // used as the context in a selector. This loads images (and with the
         // wrong path at that) so we replace the tag with something else.
@@ -533,7 +559,8 @@ ljacqu.run = function() {
     var isRightWebsite = window.location.href
       .match(/^https?:\/\/(www\.)?tombraiders\.net(\/.*)?$/i);
     if (!isRightWebsite) {
-      ljacqu.display.displayError('You are not on <b>tombraiders.net</b>');
+      ljacqu.display.displayError('You are not on ' + 
+        '<b><a href="http://tombraiders.net">tombraiders.net</a></b>');
     }
     return isRightWebsite;
   };

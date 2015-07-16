@@ -15,9 +15,7 @@ ANY level in overview mode
 
 capitalization?
 
-multiple walkthrough links to same page
-
-Detect if not on tombraiders.net / not on any walkthrough/overview page
+Detect if not on any walkthrough/overview page
 
 
 Content issues
