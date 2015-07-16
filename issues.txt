@@ -6,7 +6,9 @@ display tables on main page with better style
 
 Fix fetching of links in TRU overview
 
-h2.click()'s toggle()s not synchronized with h1.click()'s toggle()
+Add h2.click() toggle; synchronize with h1.click()'s toggle()
+
+http://tombraiders.net/stella/tomb2.html: Lvl 17 (Dragon Lair) not h1-toggable
 
 sections are hidden if they have no content -> should be only if no content for
 ANY level in overview mode
