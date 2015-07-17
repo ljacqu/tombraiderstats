@@ -55,48 +55,50 @@ ljacqu.selector = function() {
 
 
 /* ---------------------------------------------------
- * jQuery-related utility
+ * Status object
  * --------------------------------------------------- */
-ljacqu.jquery = function() {
-  /**
-   * Waits on jQuery to load. Based on
-   * <http://neighborhood.org/core/sample/jquery/append-to-head.htm>.
-   * @param {Callback} whenLoaded The function to execute once jQuery has
-   *  loaded. This function is also called when jQuery did not have to be loaded
-   *  manually, i.e. the function is always called exactly once (unless jQuery
-   *  has to be loaded and there was an error).
-   */
-  var loadJquery = function(whenLoaded) {
-    var attemptCount = 0;
+ljacqu.status = {
+  mode: 'single',
+  classes: {}
+};
 
-    var waitForLoadedJquery = function() {
-      attemptCount++;
-      if (typeof jQuery !== 'undefined') {
-        whenLoaded();
-        return;
-      }
-      if (attemptCount < 100) {
-        setTimeout(waitForLoadedJquery, 100);
-      } else {
-        console.error('Could not load jQuery!');
-      }
-    };
+/* ---------------------------------------------------
+ * jQuery loader single function
+ * --------------------------------------------------- */
+/**
+ * Waits on jQuery to load. Based on
+ * <http://neighborhood.org/core/sample/jquery/append-to-head.htm>.
+ * @param {Callback} whenLoaded The function to execute once jQuery has loaded.
+ *  This function is also called when jQuery did not have to be loaded manually,
+ *  i.e. the function is always called exactly once (unless jQuery has to be
+ *  loaded and there was an error).
+ */
+ljacqu.loadJquery = function(whenLoaded) {
+  var attemptCount = 0;
 
-    if (typeof jQuery === 'undefined') {
-      delete $;
-      var script = document.createElement('script');
-      script.src = 
-             "https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js";
-      document.getElementsByTagName('head')[0].appendChild(script);
-      waitForLoadedJquery();
-    } else {
+  var waitForLoadedJquery = function() {
+    attemptCount++;
+    if (typeof jQuery !== 'undefined') {
       whenLoaded();
+      return;
+    }
+    if (attemptCount < 100) {
+      setTimeout(waitForLoadedJquery, 100);
+    } else {
+      console.error('Could not load jQuery!');
     }
   };
-  return {
-    loadJquery: loadJquery
-  };
-}();
+
+  if (typeof jQuery === 'undefined') {
+    delete $;
+    var jq = document.createElement('script');
+    jq.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js";
+    document.getElementsByTagName('head')[0].appendChild(jq);
+    waitForLoadedJquery();
+  } else {
+    whenLoaded();
+  }
+};
 
 
 /* ---------------------------------------------------
@@ -285,7 +287,7 @@ ljacqu.document = function() {
 
 
 /* ---------------------------------------------------
- * Animation effects
+ * Animation effects and styling help
  * --------------------------------------------------- */
 ljacqu.effects = function() {
   /**
@@ -308,9 +310,27 @@ ljacqu.effects = function() {
     });
   };
   
+  /**
+   * Styles a table showing the aggregated results of an entity type. In single
+   * page mode, it adds the entity class to the left-hand side; in overview mode
+   * the rows use alternating shades of gray.
+   * @param {jQuery} table jQuery selector to the table to style
+   * @param {String} clazz The class of the entities being shown
+   */
+  var styleTable = function(table, clazz) {
+    if (ljacqu.status.mode === 'single') {
+      table.find('tr').find('td:first').attr('class', clazz);
+    } else {
+      table.attr('style', 'width: auto');
+      //table.find('tr:odd').attr('style', 'background:#292929;color:#B3B3B3');
+      table.find('tr:even').attr('style', 'background:#343434;color:#BCBCBC');
+    }
+  };
+  
   return {
     moveTopAd: moveTopAd,
-    scrollToTop: scrollToTop
+    scrollToTop: scrollToTop,
+    styleTable: styleTable
   };
 }();
 
@@ -443,29 +463,7 @@ ljacqu.container = function() {
 /* ---------------------------------------------------
  * Display results
  * --------------------------------------------------- */
-ljacqu.display = function() {
-  /**
-   * Helper function to turn a "style param" object into HTML. The object may
-   * have a key "style" with content to put into a style attribute or a "class"
-   * key for the content of a class attribute. Double quotes must be escaped.
-   * @param {Object} styleParams The style paramters
-   * @returns {String} The generated attribute(s) based on styleParams
-   */
-  var styleParamsToHtml = function(styleParams) {
-    var htmlResult = '';
-    if (styleParams.html) {
-      htmlResult += 'style="' + styleParams.html + '"';
-    }
-    if (styleParams.class) {
-      htmlResult += ' class="' + styleParams.class + '"';
-    }
-    htmlResult = htmlResult.trim();
-    if (htmlResult.length === 0) {
-      return '';
-    }
-    return ' ' + htmlResult;
-  };
-  
+ljacqu.display = function() {  
   /**
    * Adds rows to a given table based on an object. Left cell is the object's
    * key, while the right cell is the object's value for each entry.
@@ -474,10 +472,10 @@ ljacqu.display = function() {
    * @param {Object} styleParams Object specifying the style of the table row;
    *  can have keys 'style' with CSS and/or 'class' for CSS class.
    */
-  var addDataToTable = function(table, entityList, styleParams) {
+  var addDataToTable = function(table, entityList) {
     for (var key in entityList) {
       if (entityList.hasOwnProperty(key)) {
-        table.append($('<tr' + styleParamsToHtml(styleParams) + '>')
+        table.append($('<tr>')
           .append('<td>' + key + '</td>' + '<td style="text-align: right">' + 
             entityList[key] + '</td>')
         );
@@ -499,10 +497,12 @@ ljacqu.display = function() {
     var section = ljacqu.container.getSection(clazz, aElem);
     var sectionTable = section.find('table');
     resetTable(sectionTable);
-    addDataToTable(sectionTable, entityList, {'class': clazz});
-    if (sectionTable.find('td').length === 0) {
-      section.remove();
-    }
+    addDataToTable(sectionTable, entityList);
+    ljacqu.effects.styleTable(sectionTable, clazz);
+    // TODO ------------
+    //if (sectionTable.find('td').length === 0) {
+    //  section.remove();
+    //}
   };
   
   /**
@@ -612,11 +612,12 @@ ljacqu.run = function() {
 }();
 
 
-ljacqu.jquery.loadJquery(function() {
+ljacqu.loadJquery(function() {
   if (!ljacqu.run.checkWebsite()) {
     return;
   }
   if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
+    ljacqu.status.mode = 'overview';
     ljacqu.run.overviewPageRunner();
   } else {
     ljacqu.run.processPage();
