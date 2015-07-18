@@ -4,7 +4,7 @@ var ljacqu = {};
  * Configuration parameters 
  * --------------------------------------------------- */
 ljacqu.config = function() {
-  var classesToAggregate = ['enemy', 'item', 'hazard', 'secret', 'gold', 
+  var classesToAggregate = ['enemy', 'item', 'hazard', 'secret', 'gold',
     'silver', 'friendly'];
   
   /** Custom plural to singular forms. */
@@ -24,38 +24,30 @@ ljacqu.config = function() {
     wolves: 'wolf'
   };
   
-  return {
-    classesToAggregate: classesToAggregate,
-    plurals: plurals
-  };
-}();
-
-
-/* ---------------------------------------------------
- * jQuery selectors for existing page elements
- * --------------------------------------------------- */
-ljacqu.selector = function() {
   /**
-   * Selector for all entities we want to extract
+   * Returns the selector rule to extract all entities of the given class.
    * @param {String} clazz The entity class to match
    * @returns {String} The jQuery selector string
    */
-  var entityClass = function(clazz) {
+  var selectEntities = function(clazz) {
     return 'span.' + clazz;
   };
-  
+
   /**
-   * Selector for all links on an overview page leading to the walkthrough
-   * pages.
+   * Returns the selector rule for all links on an overview page leading to the 
+   * walkthrough pages.
    * @returns {String} The jQuery selector string for all relevant <a> elements
    */
-  var walkthroughLinks = function() {
+  var selectWalkthroughLinks = function() {
     return '[class^="walk-table"] a[href^="walks/"]';
   };
   
+  
   return {
-    entityClass: entityClass,
-    walkthroughLinks: walkthroughLinks
+    classesToAggregate: classesToAggregate,
+    plurals: plurals,
+    selectEntities: selectEntities,
+    selectWalkthroughLinks: selectWalkthroughLinks
   };
 }();
 
@@ -269,7 +261,7 @@ ljacqu.document = function() {
     source = source || document;
     var types = {};
     // Specifying span allows us to use the same class on <td>, which looks cool
-    $.each($(ljacqu.selector.entityClass(clazz), source), function() {
+    $.each($(ljacqu.config.selectEntities(clazz), source), function() {
       var entry = ljacqu.texthelper.getSemanticInfo($(this).text());
       if (entry.name === '') {
         return;
@@ -326,7 +318,12 @@ ljacqu.effects = function() {
     if (ljacqu.status.mode === 'single') {
       table.find('tr').find('td:first').attr('class', clazz);
     } else {
-      table.attr('style', 'width: auto');
+      var widthCss = 'width: auto';
+      if (typeof table.attr('style') === 'undefined' || 
+        table.attr('style').indexOf(widthCss) === -1) {
+        table.attr('style', widthCss);
+      }
+      // style by default, so it is commented out
       //table.find('tr:odd').attr('style', 'background:#292929;color:#B3B3B3');
       table.find('tr:even').attr('style', 'background:#343434;color:#BCBCBC');
     }
@@ -357,10 +354,6 @@ ljacqu.container = function() {
     return base;
   };
   
-  var ucfirst = function(text) {
-    return text.charAt(0).toUpperCase() + text.substr(1);
-  };
-  
   var getContainerId = function(url) {
     var folders = url.split('/');
     return 'ctr_' + folders[ folders.length - 1 ].split('.')[0];
@@ -379,8 +372,13 @@ ljacqu.container = function() {
     getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text() + 
       '</h1></div>');
     var container = $('#' + id);
+    
     $('#' + id).find('h1').click(function() {
-      container.find('h2, table').toggle();
+      if (container.find('div:visible').length > 0) {
+        container.find('div').hide();
+      } else {
+        container.find('div').show();
+      }
     });
     return container;
   };
@@ -418,6 +416,11 @@ ljacqu.container = function() {
     var container = getContainer(aElem);
     container.append('<div class="' + sectionClass + '">' + 
       '<h2>' + title + '</h2><table></table></div>');
+    var section = container.find('.' + sectionClass);
+    section.find('h2').click(function() {
+      section.find('table').toggle();
+    });
+    return section;
   };
   
   /**
@@ -432,8 +435,8 @@ ljacqu.container = function() {
     var sectionClass = getSectionClass(clazz);
     var section = container.find('.' + sectionClass);
     if (section.length === 0) {
-      createSection(sectionClass, aElem, ucfirst(clazz));
-      section = container.find('.' + sectionClass);
+      var title = clazz.charAt(0).toUpperCase() + clazz.substr(1);
+      section = createSection(sectionClass, aElem, title);
     }
     return section;
   };
@@ -523,6 +526,8 @@ ljacqu.display = function() {
     ljacqu.effects.styleTable(sectionTable, clazz);
     if (hasData) {
       ljacqu.status.classes[clazz] = hasData;
+    } else {
+      sectionTable.html('<tr><td>No entities found.</td></tr>');
     }
   };
   
@@ -575,13 +580,13 @@ ljacqu.run = function() {
   };
   
   /**
-   * Initializes the status object, which keeps track of certain states and
-   * numbers while the aggregator runs.
+   * Initializes the ljacqu.status object, which keeps track of certain states
+   * and numbers while the aggregator runs.
    * @param {String} mode The running mode (overview|single)
    */
   var initStatus = function(mode) {
     ljacqu.status = {
-      /** Registers the mode we are in */
+      /* Registers the mode we are in */
       mode: mode,
       /* Keeps track of what entity classes have content */
       classes: {},
@@ -605,7 +610,7 @@ ljacqu.run = function() {
    */
   var overviewPageRunner = function() {
     // all the links found to walkthroughs... some may link to the same page
-    var foundHtmlLinks = $(ljacqu.selector.walkthroughLinks());
+    var foundHtmlLinks = $(ljacqu.config.selectWalkthroughLinks());
     ljacqu.status.foundLinks = foundHtmlLinks.length;
     // object keeping track of all found URLs to prevent links/containers from
     // being created for the same page
@@ -667,7 +672,7 @@ ljacqu.loadJquery(function() {
   if (!ljacqu.run.checkWebsite()) {
     return;
   }
-  if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
+  if ($(ljacqu.config.selectWalkthroughLinks()).length > 0) {
     ljacqu.run.initStatus('overview');
     ljacqu.run.overviewPageRunner();
   } else {

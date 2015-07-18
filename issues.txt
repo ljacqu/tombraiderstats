@@ -4,21 +4,15 @@ Tasks
 =============
 Fix fetching of links in TRU overview
 
-Add h2.click() toggle; synchronize with h1.click()'s toggle()
-
-<h2> titles still hidden in hidden levels (h1-toggled) upon re-run of aggregator
-
 Show total of section + grand total
+
+refactor run.overviewPageRunner()
 
 order by numbers
 
 create MD technical description of aggregator
 
 MD semantic/content issues
-
-http://tombraiders.net/stella/tomb2.html: Lvl 17 (Dragon Lair) not h1-toggable
-
-add message if no entities found
 
 capitalization?
 
