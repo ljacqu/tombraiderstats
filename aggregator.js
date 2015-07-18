@@ -9,12 +9,18 @@ ljacqu.config = function() {
   
   /** Custom plural to singular forms. */
   var plurals = {
+    'cat mummies': 'cat mummy',
     gunmen: 'gunman',
+    'large medipak': 'large medipack',
     men: 'man',
     mercenaries: 'mercenary',
     mummies: 'mummy',
+    'shotgun ammo': 'shotgun shells',
+    'small medipak': 'small medipack',
+    'smg ammo': 'smg clips',
     switches: 'switch',
     tribesmen: 'tribesman',
+    'wolf\'s': 'wolf',
     wolves: 'wolf'
   };
   
@@ -58,8 +64,7 @@ ljacqu.selector = function() {
  * Status object
  * --------------------------------------------------- */
 ljacqu.status = {
-  mode: 'single',
-  classes: {}
+  // See run.initStatus()
 };
 
 /* ---------------------------------------------------
@@ -469,22 +474,39 @@ ljacqu.display = function() {
    * key, while the right cell is the object's value for each entry.
    * @param {jQuery} table jQuery-selected table object to modify
    * @param {Object} entityList The object to display in the table
-   * @param {Object} styleParams Object specifying the style of the table row;
-   *  can have keys 'style' with CSS and/or 'class' for CSS class.
+   * @returns {boolean} Whether or not entries were added to the table, i.e. if
+   *  entityList has content or not
    */
   var addDataToTable = function(table, entityList) {
+    var hasData = false;
     for (var key in entityList) {
       if (entityList.hasOwnProperty(key)) {
+        hasData = true;
         table.append($('<tr>')
           .append('<td>' + key + '</td>' + '<td style="text-align: right">' + 
             entityList[key] + '</td>')
         );
       }
     }
+    return hasData;
   };
   
   var resetTable = function(table) {
     table.html('<tr><th>Type</th><th>Total</th></tr>');
+  };
+  
+  var removeEmptySections = function() {
+    if (ljacqu.status.mode === 'single' || 
+      ljacqu.status.handledLinks === ljacqu.status.foundLinks) {
+
+      for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
+        var currentClass = ljacqu.config.classesToAggregate[i];
+        if (typeof ljacqu.status.classes[currentClass] === 'undefined') {
+          ljacqu.container.getAllSections(currentClass).remove();
+        }
+      }
+
+    }
   };
   
   /**
@@ -497,12 +519,11 @@ ljacqu.display = function() {
     var section = ljacqu.container.getSection(clazz, aElem);
     var sectionTable = section.find('table');
     resetTable(sectionTable);
-    addDataToTable(sectionTable, entityList);
+    var hasData = addDataToTable(sectionTable, entityList);
     ljacqu.effects.styleTable(sectionTable, clazz);
-    // TODO ------------
-    //if (sectionTable.find('td').length === 0) {
-    //  section.remove();
-    //}
+    if (hasData) {
+      ljacqu.status.classes[clazz] = hasData;
+    }
   };
   
   /**
@@ -525,7 +546,8 @@ ljacqu.display = function() {
   
   return {
     displayEntities: displayEntities,
-    displayError: displayError
+    displayError: displayError,
+    removeEmptySections: removeEmptySections
   };
 }();
 
@@ -548,6 +570,26 @@ ljacqu.run = function() {
       var entities = ljacqu.document.fetchEntities(currentClass, source);
       ljacqu.display.displayEntities(entities, currentClass, aElem);
     }
+    ljacqu.status.handledLinks++;
+    ljacqu.display.removeEmptySections();
+  };
+  
+  /**
+   * Initializes the status object, which keeps track of certain states and
+   * numbers while the aggregator runs.
+   * @param {String} mode The running mode (overview|single)
+   */
+  var initStatus = function(mode) {
+    ljacqu.status = {
+      /** Registers the mode we are in */
+      mode: mode,
+      /* Keeps track of what entity classes have content */
+      classes: {},
+      /* how many links were found for processing */
+      foundLinks: 0,
+      /* how many pages have been processeed */
+      handledLinks: 0
+    };
   };
   
   var makeAElem = function(href, text) {
@@ -562,8 +604,14 @@ ljacqu.run = function() {
    * delegates the data to the other methods.
    */
   var overviewPageRunner = function() {
+    // all the links found to walkthroughs... some may link to the same page
+    var foundHtmlLinks = $(ljacqu.selector.walkthroughLinks());
+    ljacqu.status.foundLinks = foundHtmlLinks.length;
+    // object keeping track of all found URLs to prevent links/containers from
+    // being created for the same page
     var foundUrls = {};
-    $.each($(ljacqu.selector.walkthroughLinks()), function() {
+    
+    $.each(foundHtmlLinks, function() {
       var urlWithoutHash = $(this).attr('href').split('#')[0];
       var aElem = makeAElem(urlWithoutHash, $(this).text());
       
@@ -575,6 +623,8 @@ ljacqu.run = function() {
           containerTitle.append('<span style="font-size: 0.8em"> + ' + 
             aElem.text() + '</span>');
         }
+        ljacqu.status.handledLinks++;
+        ljacqu.display.removeEmptySections();
         return;
       }
       ljacqu.container.createContainer(aElem);
@@ -605,6 +655,7 @@ ljacqu.run = function() {
   };
   
   return {
+    initStatus: initStatus,
     processPage: processPage,
     overviewPageRunner: overviewPageRunner,
     checkWebsite: checkWebsite
@@ -617,9 +668,10 @@ ljacqu.loadJquery(function() {
     return;
   }
   if ($(ljacqu.selector.walkthroughLinks()).length > 0) {
-    ljacqu.status.mode = 'overview';
+    ljacqu.run.initStatus('overview');
     ljacqu.run.overviewPageRunner();
   } else {
+    ljacqu.run.initStatus('single');
     ljacqu.run.processPage();
   }
 });
