@@ -4,11 +4,9 @@ Tasks
 =============
 Fix fetching of links in TRU overview
 
-Show total of section + grand total
+Show grand total
 
 refactor run.overviewPageRunner()
-
-order by numbers
 
 create MD technical description of aggregator
 

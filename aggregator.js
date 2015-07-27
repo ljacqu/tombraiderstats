@@ -10,7 +10,10 @@ ljacqu.config = function() {
   /** Custom plural to singular forms. */
   var plurals = {
     'cat mummies': 'cat mummy',
+    'guard dog': 'dog',
     gunmen: 'gunman',
+    'huskies': 'dog',
+    'husky': 'dog',
     'large medipak': 'large medipack',
     men: 'man',
     mercenaries: 'mercenary',
@@ -99,9 +102,9 @@ ljacqu.loadJquery = function(whenLoaded) {
 
 
 /* ---------------------------------------------------
- * Text transformations / semantic extraction
+ * Text transformations / semantic functions / HTML extraction
  * --------------------------------------------------- */
-ljacqu.texthelper = function() {
+ljacqu.text = function() {
   /**
    * Low-level sanitation: replaces "SECRET #3"-like occurrences to "secret" and
    * removes any non-word characters (e.g. punctuation) from the beginning and
@@ -238,31 +241,43 @@ ljacqu.texthelper = function() {
     return mergedList;
   };
   
-  return {
-    getSemanticInfo: getSemanticInfo,
-    mergeEntities: mergeEntities
+  /**
+   * Takes the entity list object and returns a sorted array of "pairs" where
+   * the first element is the entity name and the second is the number.
+   * @param {Object} entityList
+   * @returns {Array} Array where each entry is an array of two entries:
+   *  [0] is the entity name, [1] is the number of occurrences of that entity
+   */
+  var createSortedPairArray = function(entityList) {
+    var arrayList = [];
+    for (var entity in entityList) {
+      arrayList.push([entity, entityList[entity]]);
+    }
+    arrayList.sort(function(a, b) {
+      var numericDifference = b[1] - a[1];
+      if (numericDifference !== 0) {
+        return numericDifference;
+      } else {
+        // If both entries have same number, sort by entity name
+        return a[0] > b[0] ? 1 : (a[0] < b[0] ? -1 : 0);
+      }
+    });
+    return arrayList;
   };
-}();
 
-
-/* ---------------------------------------------------
- * Document retrieval (HTML extraction, loading)
- * --------------------------------------------------- */
-ljacqu.document = function() {
   /**
    * Extracts all entities from a document and returns their total.
    * @param {String} clazz The CSS class to review
    * @param {?Document} source The document (jQuery context) to examine. Omit
    *  for current document.
-   * @returns {Object} key = text of the entity, value = total occurrence of the
-   *  entity.
+   * @returns {Array} Sorted array of pairs with (entityName, number).
    */
   var fetchEntities = function(clazz, source) {
     source = source || document;
     var types = {};
     // Specifying span allows us to use the same class on <td>, which looks cool
     $.each($(ljacqu.config.selectEntities(clazz), source), function() {
-      var entry = ljacqu.texthelper.getSemanticInfo($(this).text());
+      var entry = getSemanticInfo($(this).text());
       if (entry.name === '') {
         return;
       } else if (typeof types[entry.name] === 'undefined') {
@@ -272,9 +287,9 @@ ljacqu.document = function() {
       }
     });
     
-    return ljacqu.texthelper.mergeEntities(
-      ljacqu.texthelper.mergeEntities(types)
-    );
+    return createSortedPairArray(mergeEntities(
+      mergeEntities(types)
+    ));
   };
   
   return {
@@ -326,6 +341,8 @@ ljacqu.effects = function() {
       // style by default, so it is commented out
       //table.find('tr:odd').attr('style', 'background:#292929;color:#B3B3B3');
       table.find('tr:even').attr('style', 'background:#343434;color:#BCBCBC');
+      table.find('tr.agg_total').find('td')
+        .attr('style', 'border-top: 1px solid #ccc');
     }
   };
   
@@ -476,22 +493,21 @@ ljacqu.display = function() {
    * Adds rows to a given table based on an object. Left cell is the object's
    * key, while the right cell is the object's value for each entry.
    * @param {jQuery} table jQuery-selected table object to modify
-   * @param {Object} entityList The object to display in the table
-   * @returns {boolean} Whether or not entries were added to the table, i.e. if
-   *  entityList has content or not
+   * @param {Array} entityList The pair array to display in the table
    */
   var addDataToTable = function(table, entityList) {
-    var hasData = false;
-    for (var key in entityList) {
-      if (entityList.hasOwnProperty(key)) {
-        hasData = true;
-        table.append($('<tr>')
-          .append('<td>' + key + '</td>' + '<td style="text-align: right">' + 
-            entityList[key] + '</td>')
-        );
-      }
+    var total = 0;
+    for (var i = 0; i < entityList.length; ++i) {
+      total += entityList[i][1];
+      table.append($('<tr>')
+        .append('<td>' + entityList[i][0] + '</td>' + 
+          '<td style="text-align: right">' + entityList[i][1] + '</td>')
+      );
     }
-    return hasData;
+    if (total > 0) {
+      table.append('<tr class="agg_total"><td>Total</td>' + 
+        '<td style="text-align: right">' + total + '</td></tr>');
+    }
   };
   
   var resetTable = function(table) {
@@ -514,7 +530,7 @@ ljacqu.display = function() {
   
   /**
    * Adds the elements of the entity list to the according section.
-   * @param {Object} entityList The list of found entities
+   * @param {Array} entityList The list of found entities (sorted pair array)
    * @param {String} clazz The class of the entities
    * @param {aElem} aElem aElem object of the page
    */
@@ -522,10 +538,10 @@ ljacqu.display = function() {
     var section = ljacqu.container.getSection(clazz, aElem);
     var sectionTable = section.find('table');
     resetTable(sectionTable);
-    var hasData = addDataToTable(sectionTable, entityList);
-    ljacqu.effects.styleTable(sectionTable, clazz);
-    if (hasData) {
-      ljacqu.status.classes[clazz] = hasData;
+    if (entityList.length > 0) {
+      addDataToTable(sectionTable, entityList);
+      ljacqu.effects.styleTable(sectionTable, clazz);
+      ljacqu.status.classes[clazz] = true;
     } else {
       sectionTable.html('<tr><td>No entities found.</td></tr>');
     }
@@ -572,7 +588,8 @@ ljacqu.run = function() {
     source = source || false;
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
-      var entities = ljacqu.document.fetchEntities(currentClass, source);
+      var entities = ljacqu.text.fetchEntities(currentClass, source);
+      console.log('Got ' + entities);
       ljacqu.display.displayEntities(entities, currentClass, aElem);
     }
     ljacqu.status.handledLinks++;
