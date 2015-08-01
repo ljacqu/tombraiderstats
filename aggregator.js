@@ -18,6 +18,7 @@ ljacqu.config = function() {
     'large medipak': 'large medipack',
     men: 'man',
     mercenaries: 'mercenary',
+    'mp5 ammo': 'mp5 clips',
     mummies: 'mummy',
     'shotgun ammo': 'shotgun shells',
     'small medipak': 'small medipack',
@@ -196,7 +197,7 @@ ljacqu.text = function() {
       'seventh', 'eighth', 'ninth', 'tenth'];
     var articles = ['the', 'a'];
     var adverbs = ['more', 'additional', 'another', 'other', 'sets of', 
-      'boxes of', 'bunches of', 'bundles of'];
+      'boxes of', 'bunches of', 'bundles of', 'bundle of'];
     var makeRegexpOr = function(arr) {
       return '(' + arr.join('\\s|') + '\\s)';
     };
@@ -256,9 +257,6 @@ ljacqu.text = function() {
    * @param {String} clazz The entity class of the list's entries
    */
   var addToTotal = function(entityList, clazz) {
-    if (typeof ljacqu.total[clazz] === 'undefined') {
-      ljacqu.total[clazz] = {};
-    }
     for (var key in entityList) {
       if (entityList.hasOwnProperty(key)) {
         if (typeof ljacqu.total[clazz][key] !== 'undefined') {
@@ -280,7 +278,9 @@ ljacqu.text = function() {
   var createSortedPairArray = function(entityList) {
     var arrayList = [];
     for (var entity in entityList) {
-      arrayList.push([entity, entityList[entity]]);
+      if (entityList.hasOwnProperty(entity)) {
+        arrayList.push([entity, entityList[entity]]);
+      }
     }
     arrayList.sort(function(a, b) {
       var numericDifference = b[1] - a[1];
@@ -342,19 +342,6 @@ ljacqu.effects = function() {
   };
   
   /**
-   * Single page: move the top ad down a few paragraphs because the aggregation
-   * result is right above it otherwise.
-   */
-  var moveTopAd = function() {
-    var adBar = $('.adsense-flex-header:first');
-    adBar.fadeOut(function() {
-      $('div:first p.header1').parents('div:eq(1)')
-        .siblings('p:eq(2)').after(adBar);
-      adBar.fadeIn();
-    });
-  };
-  
-  /**
    * Styles a table showing the aggregated results of an entity type. In single
    * page mode, it adds the entity class to the left-hand side; in overview mode
    * the rows use alternating shades of gray.
@@ -363,7 +350,7 @@ ljacqu.effects = function() {
    */
   var styleTable = function(table, clazz) {
     if (ljacqu.status.mode === 'single') {
-      table.find('tr').find('td:first').attr('class', clazz);
+      table.find('tr:not(:last-child)').find('td:first').attr('class', clazz);
     } else {
       var widthCss = 'width: auto';
       if (typeof table.attr('style') === 'undefined' || 
@@ -379,7 +366,6 @@ ljacqu.effects = function() {
   };
   
   return {
-    moveTopAd: moveTopAd,
     scrollToTop: scrollToTop,
     styleTable: styleTable
   };
@@ -414,11 +400,11 @@ ljacqu.container = function() {
    * @returns {jQuery} Selector of the page's container
    */
   var createContainer = function(aElem) {
-    var id = getContainerId(aElem.attr('href'));
+    var id = getContainerId(aElem.url);
     if ($('#' + id).length !== 0) {
       return $('#' + id);
     }
-    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text() + 
+    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text + 
       '</h1></div>');
     var container = $('#' + id);
     
@@ -433,23 +419,12 @@ ljacqu.container = function() {
   };
   
   /**
-   * Creates a dummy aElem object for single page mode.
-   * @returns {aElem} An aElem object to use in single page mode
-   */
-  var createSinglePageElem = function() {
-    return {
-      attr: function() { return 'results'; },
-      text: function() { return 'Statistics'; }
-    };
-  };
-  
-  /**
    * Gets the container of a page.
    * @param {aElem} aElem The aElem object for a page
    * @returns {jQuery} Selector for the page's container
    */
   var getContainer = function(aElem) {
-    var containerId = getContainerId(aElem.attr('href'));
+    var containerId = getContainerId(aElem.url);
     var container = $('#' + containerId);
     if (container.length === 0) {
       container = createContainer(aElem);
@@ -475,11 +450,11 @@ ljacqu.container = function() {
   /**
    * Gets a section or creates it if it doesn't exist.
    * @param {String} clazz The entity class to create a section for
-   * @param {aElem} aElem The aElem of the given page the section belongs to
+   * @param {?aElem} aElem The aElem of the given page the section belongs to
    * @returns {jQuery} Selector of the section
    */
   var getSection = function(clazz, aElem) {
-    aElem = aElem || createSinglePageElem();
+    aElem = aElem || {url: 'results', text: 'Statistics'};
     var container = getContainer(aElem);
     var sectionClass = getSectionClass(clazz);
     var section = container.find('.' + sectionClass);
@@ -522,8 +497,15 @@ ljacqu.container = function() {
  * --------------------------------------------------- */
 ljacqu.display = function() {
   
+  /**
+   * Shortens a text if it exceeds the given length limit.
+   * @param {String} text The text to potentially shorten
+   * @param {Number} length The maximum allowed length
+   * @returns {String} The length, shortened to `length` characters if it is 
+   *  longer
+   */
   var shortenEntry = function(text, length) {
-    return text.length > length ? text.substr(0, length) + '...' : text;
+    return text.length > length ? text.substr(0, length).trim() + '...' : text;
   };
   
   /**
@@ -548,33 +530,6 @@ ljacqu.display = function() {
     }
   };
   
-  var resetTable = function(table) {
-    table.html('<tr><th>Type</th><th>Total</th></tr>');
-  };
-  
-  var postProcess = function() {
-    if (ljacqu.status.mode === 'single' || 
-      ljacqu.status.handledLinks === ljacqu.status.foundLinks) {
-      for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
-        var currentClass = ljacqu.config.classesToAggregate[i];
-        if (typeof ljacqu.status.classes[currentClass] === 'undefined') {
-          ljacqu.container.getAllSections(currentClass).remove();
-        }
-      }
-      if (ljacqu.status.mode === 'overview') {
-        var totalAElem = {attr: function() { return '_total'; },
-          text: function() { return 'Total'; }};
-        ljacqu.container.createContainer(totalAElem);
-        for (var key in ljacqu.total) {
-          if (ljacqu.total.hasOwnProperty(key)) {
-            displayEntities(ljacqu.text.createdSortedPairArray(
-              ljacqu.total[key]), key, totalAElem);
-          }
-        }
-      }
-    }
-  };
-  
   /**
    * Adds the elements of the entity list to the according section.
    * @param {Array} entityList The list of found entities (sorted pair array)
@@ -584,13 +539,54 @@ ljacqu.display = function() {
   var displayEntities = function(entityList, clazz, aElem) {
     var section = ljacqu.container.getSection(clazz, aElem);
     var sectionTable = section.find('table');
-    resetTable(sectionTable);
+    sectionTable.html('<tr><th>Type</th><th>Total</th></tr>');
     if (entityList.length > 0) {
       addDataToTable(sectionTable, entityList);
       ljacqu.effects.styleTable(sectionTable, clazz);
       ljacqu.status.classes[clazz] = true;
     } else {
       sectionTable.html('<tr><td>No entities found.</td></tr>');
+    }
+  };
+  
+  /**
+   * Hides the sections for classes that are not present in the game, i.e. for
+   * classes that are not used in this game's walkthrough or on this page.
+   */
+  var hideUnusedClasses = function() {
+    for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
+      var currentClass = ljacqu.config.classesToAggregate[i];
+      if (typeof ljacqu.status.classes[currentClass] === 'undefined') {
+        ljacqu.container.getAllSections(currentClass).remove();
+      }
+    }
+  };
+  
+  /**
+   * Adds the global container for overview mode, showing the global total of
+   * all entity classes.
+   */
+  var addGlobalTotal = function() {
+    var totalAElem = {url: '_total', text: 'Total'};
+    ljacqu.container.createContainer(totalAElem);
+    for (var key in ljacqu.total) {
+      if (ljacqu.total.hasOwnProperty(key)) {
+        displayEntities(ljacqu.text.createdSortedPairArray(ljacqu.total[key]), 
+          key, totalAElem);
+      }
+    }
+  };
+  
+  /**
+   * Function that runs concluding tasks once after the aggregating tasks have
+   * finished (in overview mode, when all pages have been loaded & processed).
+   */
+  var postProcess = function() {
+    if (ljacqu.status.mode === 'single') {
+      hideUnusedClasses();
+    } else if (ljacqu.status.handledLinks === ljacqu.status.foundLinks) {
+      addGlobalTotal();
+      hideUnusedClasses();
     }
   };
   
@@ -628,7 +624,7 @@ ljacqu.run = function() {
    * Entry point for single-page mode and for loaded walkthrough data.
    * @param {?String} source The HTML to extract the entities from, or empty for
    *  the current document.
-   * @param {?Jquery} aElem The jQuery selector for the linking <a> element of
+   * @param {?aElem} aElem The jQuery selector for the linking <a> element of
    *  the page we're processing (or empty for single page mode).
    */
   var processPage = function(source, aElem) {
@@ -660,13 +656,10 @@ ljacqu.run = function() {
     };
     /* For overview mode: global total of all entries */
     ljacqu.total = {};
-  };
-  
-  var makeAElem = function(href, text) {
-    return {
-      attr: function() { return href; },
-      text: function() { return text; }
-    };
+    var classes = ljacqu.config.classesToAggregate;
+    for (var i = 0; i < classes.length; ++i) {
+      ljacqu.total[ classes[i] ] = {};
+    }
   };
   
   /**
@@ -683,15 +676,15 @@ ljacqu.run = function() {
     
     $.each(foundHtmlLinks, function() {
       var urlWithoutHash = $(this).attr('href').split('#')[0];
-      var aElem = makeAElem(urlWithoutHash, $(this).text());
+      var aElem = {url: urlWithoutHash, text: $(this).text()};
       
       if (typeof foundUrls[urlWithoutHash] !== 'undefined') {
         var containerTitle = ljacqu.container.getContainer(aElem).find('h1');
         // aggregator can be run many times, only append the additional title
         // once --> the containers are permanent
-        if (containerTitle.text().indexOf(aElem.text()) === -1) {
+        if (containerTitle.text().indexOf(aElem.text) === -1) {
           containerTitle.append('<span style="font-size: 0.8em"> + ' + 
-            aElem.text() + '</span>');
+            aElem.text + '</span>');
         }
         ljacqu.status.handledLinks++;
         ljacqu.display.removeEmptySections();
