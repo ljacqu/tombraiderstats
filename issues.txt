@@ -4,8 +4,6 @@ Tasks
 =============
 Fix fetching of links in TRU overview
 
-Show grand total
-
 refactor run.overviewPageRunner()
 
 create MD technical description of aggregator
@@ -38,7 +36,17 @@ http://tombraiders.net/stella/walks/TRLAwalk/tr3gold4.html
 "2 huge mutant fish" vs. "2 mutant fish"
 
 http://tombraiders.net/stella/walks/TR4walk/angkorwat.html
-"wild boar" vs. "2 more boars"
+"<item>small</item> and <item>large medipacks</item>"
+
+http://tombraiders.net/stella/walks/TR4walk/angkorwat.html
+8 golden skulls mentioned twice
+
+http://tombraiders.net/stella/walks/TR4walk/timeslevel.html
+"<enemy>2 red scorpions</enemy> emerge, then <enemy>2 more</enemy>"
+
+http://tombraiders.net/stella/tomb4.html
+Minor: "Cairo overview" treated as a walkthrough page but does not contain any
+entities
 
 TR5: secrets annotated twice
 TRA: relics/rubbing rewards annotated twice

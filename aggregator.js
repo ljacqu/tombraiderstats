@@ -12,6 +12,7 @@ ljacqu.config = function() {
     'cat mummies': 'cat mummy',
     'guard dog': 'dog',
     gunmen: 'gunman',
+    'hk ammo': 'hk clips',
     'huskies': 'dog',
     'husky': 'dog',
     'large medipak': 'large medipack',
@@ -23,9 +24,12 @@ ljacqu.config = function() {
     'smg ammo': 'smg clips',
     switches: 'switch',
     tribesmen: 'tribesman',
+    'wild boar': 'boar',
     'wolf\'s': 'wolf',
     wolves: 'wolf'
   };
+  
+  var maximumEntryLength = 100;
   
   /**
    * Returns the selector rule to extract all entities of the given class.
@@ -48,6 +52,7 @@ ljacqu.config = function() {
   
   return {
     classesToAggregate: classesToAggregate,
+    maximumEntryLength: maximumEntryLength,
     plurals: plurals,
     selectEntities: selectEntities,
     selectWalkthroughLinks: selectWalkthroughLinks
@@ -56,9 +61,12 @@ ljacqu.config = function() {
 
 
 /* ---------------------------------------------------
- * Status object
+ * Status and total object
  * --------------------------------------------------- */
 ljacqu.status = {
+  // See run.initStatus()
+};
+ljacqu.total = {
   // See run.initStatus()
 };
 
@@ -242,6 +250,27 @@ ljacqu.text = function() {
   };
   
   /**
+   * Adds the entries of the entity list to the global total object in
+   * ljacqu.total. Used for overview mode.
+   * @param {Object} entityList The list of found entities
+   * @param {String} clazz The entity class of the list's entries
+   */
+  var addToTotal = function(entityList, clazz) {
+    if (typeof ljacqu.total[clazz] === 'undefined') {
+      ljacqu.total[clazz] = {};
+    }
+    for (var key in entityList) {
+      if (entityList.hasOwnProperty(key)) {
+        if (typeof ljacqu.total[clazz][key] !== 'undefined') {
+          ljacqu.total[clazz][key] += entityList[key];
+        } else {
+          ljacqu.total[clazz][key] = entityList[key];
+        }
+      }
+    }
+  };
+  
+  /**
    * Takes the entity list object and returns a sorted array of "pairs" where
    * the first element is the entity name and the second is the number.
    * @param {Object} entityList
@@ -287,12 +316,15 @@ ljacqu.text = function() {
       }
     });
     
-    return createSortedPairArray(mergeEntities(
-      mergeEntities(types)
-    ));
+    var mergedList = mergeEntities(mergeEntities(types));
+    if (ljacqu.status.mode === 'overview') {
+      addToTotal(mergedList, clazz);
+    }
+    return createSortedPairArray(mergedList);
   };
   
   return {
+    createdSortedPairArray: createSortedPairArray,
     fetchEntities: fetchEntities
   };
 }();
@@ -488,7 +520,12 @@ ljacqu.container = function() {
 /* ---------------------------------------------------
  * Display results
  * --------------------------------------------------- */
-ljacqu.display = function() {  
+ljacqu.display = function() {
+  
+  var shortenEntry = function(text, length) {
+    return text.length > length ? text.substr(0, length) + '...' : text;
+  };
+  
   /**
    * Adds rows to a given table based on an object. Left cell is the object's
    * key, while the right cell is the object's value for each entry.
@@ -500,11 +537,12 @@ ljacqu.display = function() {
     for (var i = 0; i < entityList.length; ++i) {
       total += entityList[i][1];
       table.append($('<tr>')
-        .append('<td>' + entityList[i][0] + '</td>' + 
+        .append('<td>' + shortenEntry(entityList[i][0], 
+          ljacqu.config.maximumEntryLength) + '</td>' +
           '<td style="text-align: right">' + entityList[i][1] + '</td>')
       );
     }
-    if (total > 0) {
+    if (entityList.length >= 2) {
       table.append('<tr class="agg_total"><td>Total</td>' + 
         '<td style="text-align: right">' + total + '</td></tr>');
     }
@@ -514,17 +552,26 @@ ljacqu.display = function() {
     table.html('<tr><th>Type</th><th>Total</th></tr>');
   };
   
-  var removeEmptySections = function() {
+  var postProcess = function() {
     if (ljacqu.status.mode === 'single' || 
       ljacqu.status.handledLinks === ljacqu.status.foundLinks) {
-
       for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
         var currentClass = ljacqu.config.classesToAggregate[i];
         if (typeof ljacqu.status.classes[currentClass] === 'undefined') {
           ljacqu.container.getAllSections(currentClass).remove();
         }
       }
-
+      if (ljacqu.status.mode === 'overview') {
+        var totalAElem = {attr: function() { return '_total'; },
+          text: function() { return 'Total'; }};
+        ljacqu.container.createContainer(totalAElem);
+        for (var key in ljacqu.total) {
+          if (ljacqu.total.hasOwnProperty(key)) {
+            displayEntities(ljacqu.text.createdSortedPairArray(
+              ljacqu.total[key]), key, totalAElem);
+          }
+        }
+      }
     }
   };
   
@@ -568,7 +615,7 @@ ljacqu.display = function() {
   return {
     displayEntities: displayEntities,
     displayError: displayError,
-    removeEmptySections: removeEmptySections
+    postProcess: postProcess
   };
 }();
 
@@ -589,11 +636,10 @@ ljacqu.run = function() {
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
       var entities = ljacqu.text.fetchEntities(currentClass, source);
-      console.log('Got ' + entities);
       ljacqu.display.displayEntities(entities, currentClass, aElem);
     }
     ljacqu.status.handledLinks++;
-    ljacqu.display.removeEmptySections();
+    ljacqu.display.postProcess();
   };
   
   /**
@@ -612,6 +658,8 @@ ljacqu.run = function() {
       /* how many pages have been processeed */
       handledLinks: 0
     };
+    /* For overview mode: global total of all entries */
+    ljacqu.total = {};
   };
   
   var makeAElem = function(href, text) {
@@ -675,7 +723,7 @@ ljacqu.run = function() {
     }
     return isRightWebsite;
   };
-  
+
   return {
     initStatus: initStatus,
     processPage: processPage,
