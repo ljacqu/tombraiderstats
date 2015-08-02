@@ -14,7 +14,7 @@ javascript:(function(){var el=document.createElement('script');el.src='https://l
 Click on the bookmark when you're on a [tombraiders.net](http://tombraiders.net)
 page with walkthrough content (game overview or an individual walkthrough). 
 
-For example: Tomb Raider Underworld  
+For example: Tomb Raider Underworld
 [Bhogavati level](http://tombraiders.net/stella/walks/TR8walk/07bhogavati.html),
 or the [Tomb Raider III overview](http://tombraiders.net/stella/tomb3.html).
 
