@@ -6,6 +6,9 @@ Fix fetching of links in TRU overview
 
 refactor run.overviewPageRunner()
 
+Check which classes to aggregate --> how to avoid using all classes on all
+games?
+
 MD semantic/content issues
 
 Option to exclude entities contained in .note classes

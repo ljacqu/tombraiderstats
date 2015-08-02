@@ -5,7 +5,7 @@ var ljacqu = {};
  * --------------------------------------------------- */
 ljacqu.config = function() {
   var classesToAggregate = ['enemy', 'item', 'hazard', 'secret', 'gold',
-    'silver', 'friendly'];
+    'silver', 'friendly', 'crystal'];
 
   /** Custom plural to singular forms. */
   var plurals = {
@@ -331,41 +331,6 @@ ljacqu.text = function() {
 
 
 /* ---------------------------------------------------
- * Animation effects and styling help
- * --------------------------------------------------- */
-ljacqu.effects = function() {
-
-  /**
-   * Styles a table showing the aggregated results of an entity type. In single
-   * page mode, it adds the entity class to the left-hand side; in overview mode
-   * the rows use alternating shades of gray.
-   * @param {jQuery} table jQuery selector to the table to style
-   * @param {String} clazz The class of the entities being shown
-   */
-  var styleTable = function(table, clazz) {
-    if (ljacqu.status.mode === 'single') {
-      table.find('tr:not(:last-child)').find('td:first').attr('class', clazz);
-    } else {
-      var widthCss = 'width: auto';
-      if (typeof table.attr('style') === 'undefined' ||
-        table.attr('style').indexOf(widthCss) === -1) {
-        table.attr('style', widthCss);
-      }
-      // style by default, so it is commented out
-      //table.find('tr:odd').attr('style', 'background:#292929;color:#B3B3B3');
-      table.find('tr:even').attr('style', 'background:#343434;color:#BCBCBC');
-      table.find('tr.agg_total').find('td')
-        .attr('style', 'border-top: 1px solid #ccc');
-    }
-  };
-
-  return {
-    styleTable: styleTable
-  };
-}();
-
-
-/* ---------------------------------------------------
  * Container module (for result data)
  * --------------------------------------------------- */
 ljacqu.container = function() {
@@ -521,6 +486,33 @@ ljacqu.display = function() {
         '<td style="text-align: right">' + total + '</td></tr>');
     }
   };
+  
+  /**
+   * Styles a table showing the aggregated results of an entity type. In single
+   * page mode, it adds the entity class to the left-hand side; in overview mode
+   * the rows use alternating shades of gray.
+   * @param {jQuery} table jQuery selector to the table to style
+   * @param {String} clazz The class of the entities being shown
+   */
+  var styleTable = function(table, clazz) {
+    if (ljacqu.status.mode === 'single') {
+      // "Total" row should not have the entity class
+      var rowSelector = table.find('tr').length === 2 ? 'tr' :
+        'tr:not(:last-child)';
+      table.find(rowSelector).find('td:first').attr('class', clazz);
+    } else {
+      var widthCss = 'width: auto';
+      if (typeof table.attr('style') === 'undefined' ||
+        table.attr('style').indexOf(widthCss) === -1) {
+        table.attr('style', widthCss);
+      }
+      // style by default, so it is commented out
+      //table.find('tr:odd').attr('style', 'background:#292929;color:#B3B3B3');
+      table.find('tr:even').attr('style', 'background:#343434;color:#BCBCBC');
+      table.find('tr.agg_total').find('td')
+        .attr('style', 'border-top: 1px solid #ccc');
+    }
+  };
 
   /**
    * Adds the elements of the entity list to the according section.
@@ -534,7 +526,7 @@ ljacqu.display = function() {
     sectionTable.html('<tr><th>Type</th><th>Total</th></tr>');
     if (entityList.length > 0) {
       addDataToTable(sectionTable, entityList);
-      ljacqu.effects.styleTable(sectionTable, clazz);
+      styleTable(sectionTable, clazz);
       ljacqu.status.classes[clazz] = true;
     } else {
       sectionTable.html('<tr><td>No entities found.</td></tr>');
@@ -620,7 +612,7 @@ ljacqu.run = function() {
    *  processing (or empty for single page mode).
    */
   var processPage = function(source, aElem) {
-    source = source || false;
+    //source = source || false;
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
       var entities = ljacqu.text.fetchEntities(currentClass, source);

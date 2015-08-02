@@ -53,7 +53,6 @@ The following sections exist:
 - `loadJquery` – single function to load jQuery when it isn't present
 - `text` – extracts the entities from a page and tries to understand the
  number of referenced entities
-- `effects` – contains some effects used in the _display_ section
 - `container` – manages the additional tables to display the results in
 - `display` – handles the display logic of the computed statistics
 - `run` – entry point functions; the _glue_ between all the other parts
