@@ -1,12 +1,12 @@
 var ljacqu = {};
 
 /* ---------------------------------------------------
- * Configuration parameters 
+ * Configuration parameters
  * --------------------------------------------------- */
 ljacqu.config = function() {
   var classesToAggregate = ['enemy', 'item', 'hazard', 'secret', 'gold',
     'silver', 'friendly'];
-  
+
   /** Custom plural to singular forms. */
   var plurals = {
     'cat mummies': 'cat mummy',
@@ -29,9 +29,9 @@ ljacqu.config = function() {
     'wolf\'s': 'wolf',
     wolves: 'wolf'
   };
-  
+
   var maximumEntryLength = 100;
-  
+
   /**
    * Returns the selector rule to extract all entities of the given class.
    * @param {String} clazz The entity class to match
@@ -42,15 +42,15 @@ ljacqu.config = function() {
   };
 
   /**
-   * Returns the selector rule for all links on an overview page leading to the 
+   * Returns the selector rule for all links on an overview page leading to the
    * walkthrough pages.
    * @returns {String} The jQuery selector string for all relevant <a> elements
    */
   var selectWalkthroughLinks = function() {
     return '[class^="walk-table"] a[href^="walks/"]';
   };
-  
-  
+
+
   return {
     classesToAggregate: classesToAggregate,
     maximumEntryLength: maximumEntryLength,
@@ -165,13 +165,13 @@ ljacqu.text = function() {
     // match the rest, e.g. "shark"
     return {name: extractedName, number: 1};
   };
-  
+
   /**
    * Replaces the plural with the singular form where applicable. Uses custom
-   * list defined in "plurals" but also merges entries such as "bats" and "bat" 
+   * list defined in "plurals" but also merges entries such as "bats" and "bat"
    * into "bat" if the no-s ("bat") version exists.
    * @param {String} entity the name of the entity
-   * @param {String} entityList the list of found entities
+   * @param {Object} entityList the list of found entities
    * @returns {String} the singular version of entity
    */
   var pluralToSingular = function(entity, entityList) {
@@ -186,7 +186,7 @@ ljacqu.text = function() {
     }
     return entity;
   };
-  
+
   /**
    * Creates a regular expression to remove superfluous words in an entity, e.g.
    * to match things like "a second thug" or "more bats".
@@ -196,7 +196,7 @@ ljacqu.text = function() {
     var cardinalWords = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth',
       'seventh', 'eighth', 'ninth', 'tenth'];
     var articles = ['the', 'a'];
-    var adverbs = ['more', 'additional', 'another', 'other', 'sets of', 
+    var adverbs = ['more', 'additional', 'another', 'other', 'sets of',
       'boxes of', 'bunches of', 'bundles of', 'bundle of'];
     var makeRegexpOr = function(arr) {
       return '(' + arr.join('\\s|') + '\\s)';
@@ -211,9 +211,9 @@ ljacqu.text = function() {
    * Attempts to merge a given entry with another one if the same name exists in
    * singular or otherwise similar (e.g. "a second tiger" and "tiger").
    * @param {String} entity The entity name to examine (potentially merge)
-   * @param {Object} entityList The entities discovered as object, where
+   * @param {Object} entityList The found entities as an object, where
    *  the key is the extracted name and the value the total number.
-   * @returns {Object} Merged object
+   * @returns {Object} Merged entity list object
    */
   var mergeEntityEntry = function(entity, entityList) {
     var cardinalMatches = entity.match(getCardinalRegexp());
@@ -231,13 +231,13 @@ ljacqu.text = function() {
     }
     return entityList;
   };
-  
+
   /**
    * Merges entity names (as keys in an object) together which designate the
    * same type of entity but have a different name (plural vs. singular,
    * "another goon" vs. "goon" etc.).
    * @param {Object} entityList The list of found entities where the key is the
-   * entity name and the value the total number of occurrences.
+   * entity name and the value the total number of occurrences
    * @returns {Object} A merged entity list
    */
   var mergeEntities = function(entityList) {
@@ -249,7 +249,7 @@ ljacqu.text = function() {
     }
     return mergedList;
   };
-  
+
   /**
    * Adds the entries of the entity list to the global total object in
    * ljacqu.total. Used for overview mode.
@@ -267,7 +267,7 @@ ljacqu.text = function() {
       }
     }
   };
-  
+
   /**
    * Takes the entity list object and returns a sorted array of "pairs" where
    * the first element is the entity name and the second is the number.
@@ -315,14 +315,14 @@ ljacqu.text = function() {
         types[entry.name] += entry.number;
       }
     });
-    
+
     var mergedList = mergeEntities(mergeEntities(types));
     if (ljacqu.status.mode === 'overview') {
       addToTotal(mergedList, clazz);
     }
     return createSortedPairArray(mergedList);
   };
-  
+
   return {
     createdSortedPairArray: createSortedPairArray,
     fetchEntities: fetchEntities
@@ -340,7 +340,7 @@ ljacqu.effects = function() {
   var scrollToTop = function() {
     $("html, body").animate({ scrollTop: 0 }, "slow");
   };
-  
+
   /**
    * Styles a table showing the aggregated results of an entity type. In single
    * page mode, it adds the entity class to the left-hand side; in overview mode
@@ -353,7 +353,7 @@ ljacqu.effects = function() {
       table.find('tr:not(:last-child)').find('td:first').attr('class', clazz);
     } else {
       var widthCss = 'width: auto';
-      if (typeof table.attr('style') === 'undefined' || 
+      if (typeof table.attr('style') === 'undefined' ||
         table.attr('style').indexOf(widthCss) === -1) {
         table.attr('style', widthCss);
       }
@@ -364,7 +364,7 @@ ljacqu.effects = function() {
         .attr('style', 'border-top: 1px solid #ccc');
     }
   };
-  
+
   return {
     scrollToTop: scrollToTop,
     styleTable: styleTable
@@ -376,7 +376,7 @@ ljacqu.effects = function() {
  * Container module (for result data)
  * --------------------------------------------------- */
 ljacqu.container = function() {
-  
+
   var getBaseElement = function() {
     // overview page has #wrap, single page has #LayoutDiv1
     var base = $('#wrap');
@@ -388,12 +388,12 @@ ljacqu.container = function() {
     }
     return base;
   };
-  
+
   var getContainerId = function(url) {
     var folders = url.split('/');
     return 'ctr_' + folders[ folders.length - 1 ].split('.')[0];
   };
-  
+
   /**
    * Create a container for a given page.
    * @param {aElem} aElem The aElem of a page
@@ -404,10 +404,10 @@ ljacqu.container = function() {
     if ($('#' + id).length !== 0) {
       return $('#' + id);
     }
-    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text + 
+    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text +
       '</h1></div>');
     var container = $('#' + id);
-    
+
     $('#' + id).find('h1').click(function() {
       if (container.find('div:visible').length > 0) {
         container.find('div').hide();
@@ -417,7 +417,7 @@ ljacqu.container = function() {
     });
     return container;
   };
-  
+
   /**
    * Gets the container of a page.
    * @param {aElem} aElem The aElem object for a page
@@ -431,14 +431,14 @@ ljacqu.container = function() {
     }
     return container;
   };
-  
+
   var getSectionClass = function(clazz) {
     return 'sec_' + clazz;
   };
-  
+
   var createSection = function(sectionClass, aElem, title) {
     var container = getContainer(aElem);
-    container.append('<div class="' + sectionClass + '">' + 
+    container.append('<div class="' + sectionClass + '">' +
       '<h2>' + title + '</h2><table></table></div>');
     var section = container.find('.' + sectionClass);
     section.find('h2').click(function() {
@@ -446,7 +446,7 @@ ljacqu.container = function() {
     });
     return section;
   };
-  
+
   /**
    * Gets a section or creates it if it doesn't exist.
    * @param {String} clazz The entity class to create a section for
@@ -464,7 +464,7 @@ ljacqu.container = function() {
     }
     return section;
   };
-  
+
   /**
    * Get all sections that display a certain entity class.
    * @param {String} clazz The section classes to fetch
@@ -473,22 +473,22 @@ ljacqu.container = function() {
   var getAllSections = function(clazz) {
     return $('div[id^="ctr"] div.sec_' + clazz);
   };
-  
+
   /**
    * Removes all containers. Used for debug only.
    */
   var removeAll = function() {
     getBaseElement().prevAll('div').remove();
   };
-  
-  
+
+
   return {
     createContainer: createContainer,
     getContainer: getContainer,
     getSection: getSection,
     getAllSections: getAllSections,
     removeAll: removeAll
-  };  
+  };
 }();
 
 
@@ -496,18 +496,18 @@ ljacqu.container = function() {
  * Display results
  * --------------------------------------------------- */
 ljacqu.display = function() {
-  
+
   /**
    * Shortens a text if it exceeds the given length limit.
    * @param {String} text The text to potentially shorten
    * @param {Number} length The maximum allowed length
-   * @returns {String} The length, shortened to `length` characters if it is 
+   * @returns {String} The length, shortened to `length` characters if it is
    *  longer
    */
   var shortenEntry = function(text, length) {
     return text.length > length ? text.substr(0, length).trim() + '...' : text;
   };
-  
+
   /**
    * Adds rows to a given table based on an object. Left cell is the object's
    * key, while the right cell is the object's value for each entry.
@@ -519,17 +519,17 @@ ljacqu.display = function() {
     for (var i = 0; i < entityList.length; ++i) {
       total += entityList[i][1];
       table.append($('<tr>')
-        .append('<td>' + shortenEntry(entityList[i][0], 
+        .append('<td>' + shortenEntry(entityList[i][0],
           ljacqu.config.maximumEntryLength) + '</td>' +
           '<td style="text-align: right">' + entityList[i][1] + '</td>')
       );
     }
     if (entityList.length >= 2) {
-      table.append('<tr class="agg_total"><td>Total</td>' + 
+      table.append('<tr class="agg_total"><td>Total</td>' +
         '<td style="text-align: right">' + total + '</td></tr>');
     }
   };
-  
+
   /**
    * Adds the elements of the entity list to the according section.
    * @param {Array} entityList The list of found entities (sorted pair array)
@@ -548,7 +548,7 @@ ljacqu.display = function() {
       sectionTable.html('<tr><td>No entities found.</td></tr>');
     }
   };
-  
+
   /**
    * Hides the sections for classes that are not present in the game, i.e. for
    * classes that are not used in this game's walkthrough or on this page.
@@ -561,7 +561,7 @@ ljacqu.display = function() {
       }
     }
   };
-  
+
   /**
    * Adds the global container for overview mode, showing the global total of
    * all entity classes.
@@ -571,12 +571,12 @@ ljacqu.display = function() {
     ljacqu.container.createContainer(totalAElem);
     for (var key in ljacqu.total) {
       if (ljacqu.total.hasOwnProperty(key)) {
-        displayEntities(ljacqu.text.createdSortedPairArray(ljacqu.total[key]), 
+        displayEntities(ljacqu.text.createdSortedPairArray(ljacqu.total[key]),
           key, totalAElem);
       }
     }
   };
-  
+
   /**
    * Function that runs concluding tasks once after the aggregating tasks have
    * finished (in overview mode, when all pages have been loaded & processed).
@@ -589,7 +589,7 @@ ljacqu.display = function() {
       hideUnusedClasses();
     }
   };
-  
+
   /**
    * Creates an error box and displays a given error message.
    * @param {String} message The error message to display
@@ -598,7 +598,7 @@ ljacqu.display = function() {
     var errorBox = $('#agg_err');
     if (errorBox.length === 0) {
       $('body').prepend('<div id="agg_err" style="color:#300; display:block;' +
-        ' border:1px solid #900; background-color:#fee; padding:10px;' + 
+        ' border:1px solid #900; background-color:#fee; padding:10px;' +
         ' margin:20px; z-index:2015; opacity:1"></div>');
       errorBox = $('#agg_err');
     }
@@ -607,7 +607,7 @@ ljacqu.display = function() {
     errorBox.html(message);
     errorBox.fadeIn();
   };
-  
+
   return {
     displayEntities: displayEntities,
     displayError: displayError,
@@ -624,8 +624,8 @@ ljacqu.run = function() {
    * Entry point for single-page mode and for loaded walkthrough data.
    * @param {?String} source The HTML to extract the entities from, or empty for
    *  the current document.
-   * @param {?aElem} aElem The jQuery selector for the linking <a> element of
-   *  the page we're processing (or empty for single page mode).
+   * @param {?aElem} aElem The aElem object for the page we're currently
+   *  processing (or empty for single page mode).
    */
   var processPage = function(source, aElem) {
     source = source || false;
@@ -637,7 +637,7 @@ ljacqu.run = function() {
     ljacqu.status.handledLinks++;
     ljacqu.display.postProcess();
   };
-  
+
   /**
    * Initializes the ljacqu.status object, which keeps track of certain states
    * and numbers while the aggregator runs.
@@ -661,7 +661,7 @@ ljacqu.run = function() {
       ljacqu.total[ classes[i] ] = {};
     }
   };
-  
+
   /**
    * Entry point for overview mode: fetches the links, sends GET requests and
    * delegates the data to the other methods.
@@ -673,17 +673,17 @@ ljacqu.run = function() {
     // object keeping track of all found URLs to prevent links/containers from
     // being created for the same page
     var foundUrls = {};
-    
+
     $.each(foundHtmlLinks, function() {
       var urlWithoutHash = $(this).attr('href').split('#')[0];
       var aElem = {url: urlWithoutHash, text: $(this).text()};
-      
+
       if (typeof foundUrls[urlWithoutHash] !== 'undefined') {
         var containerTitle = ljacqu.container.getContainer(aElem).find('h1');
         // aggregator can be run many times, only append the additional title
         // once --> the containers are permanent
         if (containerTitle.text().indexOf(aElem.text) === -1) {
-          containerTitle.append('<span style="font-size: 0.8em"> + ' + 
+          containerTitle.append('<span style="font-size: 0.8em"> + ' +
             aElem.text + '</span>');
         }
         ljacqu.status.handledLinks++;
@@ -702,7 +702,7 @@ ljacqu.run = function() {
       }, 'html');
     });
   };
-  
+
   /**
    * Ensure that the page is on tombraiders.net or www.tombraiders.net.
    * @returns {boolean} True if the page is on tombraiders.net, false otherwise.
@@ -711,7 +711,7 @@ ljacqu.run = function() {
     var isRightWebsite = window.location.href
       .match(/^https?:\/\/(www\.)?tombraiders\.net(\/.*)?$/i);
     if (!isRightWebsite) {
-      ljacqu.display.displayError('You are not on ' + 
+      ljacqu.display.displayError('You are not on ' +
         '<b><a href="http://tombraiders.net">tombraiders.net</a></b>');
     }
     return isRightWebsite;

@@ -6,8 +6,6 @@ Fix fetching of links in TRU overview
 
 refactor run.overviewPageRunner()
 
-create MD technical description of aggregator
-
 MD semantic/content issues
 
 Option to exclude entities contained in .note classes

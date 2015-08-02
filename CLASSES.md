@@ -1,14 +1,25 @@
-CSS classes
-=========
-This page contains a list of the CSS classes used to annotate entities in the 
-tombraiders.net walkthroughs. This is how the aggregator recognizes the entities
-on the pages.
+CSS Classes
+===========
+The walkthroughs on _tombraiders.net_ use different colors for different types 
+of entities, e.g. enemies are shown in orange color and items are green.
+
+These colors are defined with CSS classes in the walkthrough pages. For example,
+an enemy may be written in the following way in the HTML markup:
+
+```html
+A <span class="enemy">dog</span> emerges
+```
+
+This is how the aggregator recognizes the entities on a page – it searches for 
+the use of special CSS classes.
+
+Below, we show which CSS classes are used and what entity type they stand for.
 
 Basic classes
--------
+-------------
 Present in all walkthroughs.
 
-Class name | Examples
+Class name | Example
 ---------- | -------------
 enemy      | guards, tigers, rats
 hazard     | fire, water current, lasers
@@ -17,7 +28,7 @@ movable    | buttons, levers, blocks
 
 
 Specific classes
----------
+----------------
 Present only in some games; their meaning may vary.
 
 Class name | Description
@@ -25,7 +36,7 @@ Class name | Description
 artifact   | TRA
 bronze     | TRL: reward
 crystal    | TR1, TR3: save crystal; AOD: upgrades; TRL, TRA: checkpoints
-friendly   | Friendly entities (rare occurrence in most games ;))
+friendly   | Friendly entities (rare occurrence in most games :sweat_smile:)
 gold       | TR2: secret; TRL: reward; TRU: relic
 jade       | TR2: secret
 relic      | TRA
