@@ -334,12 +334,6 @@ ljacqu.text = function() {
  * Animation effects and styling help
  * --------------------------------------------------- */
 ljacqu.effects = function() {
-  /**
-   * Makes the user scroll to the top.
-   */
-  var scrollToTop = function() {
-    $("html, body").animate({ scrollTop: 0 }, "slow");
-  };
 
   /**
    * Styles a table showing the aggregated results of an entity type. In single
@@ -366,7 +360,6 @@ ljacqu.effects = function() {
   };
 
   return {
-    scrollToTop: scrollToTop,
     styleTable: styleTable
   };
 }();
@@ -379,12 +372,10 @@ ljacqu.container = function() {
 
   var getBaseElement = function() {
     // overview page has #wrap, single page has #LayoutDiv1
-    var base = $('#wrap');
+    var base = ljacqu.status.mode === 'overview' ? $('#wrap') :
+      $('#LayoutDiv1');
     if (base.length === 0) {
-      base = $('#LayoutDiv1');
-      if (base.length === 0) {
-        throw new Error('Could not get base element!');
-      }
+      throw new Error('Could not get base element!');
     }
     return base;
   };
@@ -438,8 +429,10 @@ ljacqu.container = function() {
 
   var createSection = function(sectionClass, aElem, title) {
     var container = getContainer(aElem);
-    container.append('<div class="' + sectionClass + '">' +
-      '<h2>' + title + '</h2><table></table></div>');
+    var isHidden = ljacqu.status.mode === 'overview' && aElem.url !== '_total' ?
+      ' style="display: none"' : '';
+    container.append('<div class="' + sectionClass + '"' + isHidden + '><h2>' +
+      title + '</h2><table></table></div>');
     var section = container.find('.' + sectionClass);
     section.find('h2').click(function() {
       section.find('table').toggle();
@@ -466,12 +459,11 @@ ljacqu.container = function() {
   };
 
   /**
-   * Get all sections that display a certain entity class.
+   * Removes all sections that display a certain entity class.
    * @param {String} clazz The section classes to fetch
-   * @returns {jQuery} Selector with all the sections
    */
-  var getAllSections = function(clazz) {
-    return $('div[id^="ctr"] div.sec_' + clazz);
+  var removeAllSections = function(clazz) {
+    $('div[id^="ctr"] div.sec_' + clazz).remove();
   };
 
   /**
@@ -486,7 +478,7 @@ ljacqu.container = function() {
     createContainer: createContainer,
     getContainer: getContainer,
     getSection: getSection,
-    getAllSections: getAllSections,
+    removeAllSections: removeAllSections,
     removeAll: removeAll
   };
 }();
@@ -557,7 +549,7 @@ ljacqu.display = function() {
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
       if (typeof ljacqu.status.classes[currentClass] === 'undefined') {
-        ljacqu.container.getAllSections(currentClass).remove();
+        ljacqu.container.removeAllSections(currentClass);
       }
     }
   };
@@ -603,7 +595,7 @@ ljacqu.display = function() {
       errorBox = $('#agg_err');
     }
     errorBox.hide();
-    ljacqu.effects.scrollToTop();
+    $('html, body').animate({ scrollTop: 0 }, 'slow');
     errorBox.html(message);
     errorBox.fadeIn();
   };
@@ -676,7 +668,8 @@ ljacqu.run = function() {
 
     $.each(foundHtmlLinks, function() {
       var urlWithoutHash = $(this).attr('href').split('#')[0];
-      var aElem = {url: urlWithoutHash, text: $(this).text()};
+      var aElem = {url: urlWithoutHash,
+        text: $(this).text().replace(/\s{2,}/g, ' ')};
 
       if (typeof foundUrls[urlWithoutHash] !== 'undefined') {
         var containerTitle = ljacqu.container.getContainer(aElem).find('h1');
@@ -687,7 +680,7 @@ ljacqu.run = function() {
             aElem.text + '</span>');
         }
         ljacqu.status.handledLinks++;
-        ljacqu.display.removeEmptySections();
+        ljacqu.display.postProcess();
         return;
       }
       ljacqu.container.createContainer(aElem);
