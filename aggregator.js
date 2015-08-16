@@ -340,7 +340,11 @@ ljacqu.container = function() {
     var base = ljacqu.status.mode === 'overview' ? $('#wrap') :
       $('#LayoutDiv1');
     if (base.length === 0) {
-      throw new Error('Could not get base element!');
+      if (location.href.indexOf('TR9walk') !== -1) {
+        $('.gridContainer').prepend($('<div id="LayoutDiv1">'));
+        return $('#LayoutDiv1');
+      }
+      throw new Error('Could not get base element!'); 
     }
     return base;
   };
