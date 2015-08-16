@@ -4,8 +4,6 @@ Tasks
 =============
 Fix fetching of links in TRU overview
 
-refactor run.overviewPageRunner()
-
 Check which classes to aggregate --> how to avoid using all classes on all
 games?
 
@@ -13,7 +11,7 @@ MD semantic/content issues
 
 Option to exclude entities contained in .note classes
 
-capitalization?
+capitalization? --> keep all-caps entries
 
 Bookmarklet: don't reload everything if we're re-running?
 
@@ -36,6 +34,8 @@ wielding goons" virtually all the same type of enemy
 Overview http://www.tombraiders.net/stella/tomb2.html
 guy with a gun, guy with a shotgun, guy with the club, guy with the gun,
 guys with clubs, guys with guns, ...
+
+first aid kit (TRU) gets replaced to "aid kit"
 
 http://tombraiders.net/stella/tomb4.html
 "more" as enemy???

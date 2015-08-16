@@ -106,30 +106,76 @@ ljacqu.loadJquery = function(whenLoaded) {
  * --------------------------------------------------- */
 ljacqu.game = function() {
 
-  var setGameMode = function (name, pattern) {
-    ljacqu.status.mode = name;
-    ljacqu.status.game = window.location.href.match(pattern)[1];
-  };
-
-  var detectGameAndMode = function () {
+  /**
+   * Returns the run mode and the game the page is about.
+   * @returns {Array} 0 => game mode (single|overview),
+   *  1 => abbreviation of the game's name, e.g. "tomb3"
+   */
+  var detectModeAndGame = function () {
     var overviewPattern = /\/stella\/([a-z0-9\-_]+)\.html/i;
     var singlePattern = /\/stella\/walks\/([a-z0-9\-_]+)\/.*?\.html/i;
     var url = window.location.href;
-
-    if (overviewPattern.test(url)) {
-      setGameMode('overview', overviewPattern);
-    } else if (singlePattern.test(url)) {
-      setGameMode('single', singlePattern);
-    } else {
-      console.error('Did not recognize URL');
-      ljacqu.display.displayError('Please make sure you are on a walkthrough ' +
-        'or overview page!');
+    
+    var matches = url.match(overviewPattern);
+    if (null !== matches) {
+      return ['overview', matches[1]];
     }
+    matches = url.match(singlePattern);
+    if (null !== matches) {
+      return ['single', matches[1]];
+    }
+    ljacqu.display.displayError('Please make sure you are on a walkthrough ' +
+      'or overview page!');
+    throw new Error('Did not recognize URL');
+  };
+  
+  var addRunOptions = function (options) {
+    var infodiv = $('h2:contains("Walkthrough")').next('div');
+    infodiv.prepend($('<table id="agg_options">'));
+    $('#agg_options').append('<tr><td colspan="3">Please click on the OS ' +
+      ' to get the walkthroughs for. <span class="em4" id="agg_click_msg">' + 
+      'Click to select</span></td></tr>');
+    $('#agg_click_msg').hide();
+    $('#agg_options').append($('<tr>'));
+    for (var i = 0; i < options.length; i++) {
+      $('#agg_options tr:last').append('<td><span class="em5" ' +
+        'style="font-weight: bold" title="Click to select">' + options[i] +
+        '</span></td>');
+      var cell = $('#agg_options tr:last td:eq(' + i + ')');
+      cell.on('click', (function (i) {
+        return function () {
+          ljacqu.status.optionOs = options[i];
+          $('#agg_options').remove();
+          ljacqu.run.overviewPageRunner();
+        };
+      })(i));
+      cell.hover(function () {
+        $(this).find('span').attr('class', 'em3');
+        $('#agg_click_msg').show();
+      }, function () {
+        $(this).find('span').attr('class', 'em5');
+        $('#agg_click_msg').hide();
+      });
+    }
+  };
+  
+  var getUnderworldLinks = function () {
+    var os = ljacqu.status.optionOs;
+    var links = $('[class^="walk-table"] a[href^="walks/"]')
+      .filter(':contains("' + os + '")');
+
+    $.each(links, function (key) {
+      var linkText = $(this).closest('p').text().match(/^(.*?)\(/);      
+      links[key].text = linkText[1].trim();
+    });
+
+    return links;
   };
 
   /**
    * Returns all links on an overview page leading to the walkthrough pages.
-   * @returns {jQuery} All relevant <a> elements
+   * @returns {jQuery|Boolean} Selection of all relevant <a> elements;
+   *  boolean false if an additional option must be selected by the user first
    */
   var getWalkthroughLinks = function () {
     if (ljacqu.status.game === 'tomb4') {
@@ -140,6 +186,13 @@ ljacqu.game = function() {
       // Add "Croft Manor" link, remove "Time Trial Tips"
       return $('a:contains("Croft Manor"), [class^="walk-table"] ' +
         'a[href^="walks/"]').filter(':not(:contains("Time Trial Tips"))');
+    } else if (ljacqu.status.game === 'tomb8') {
+      if (typeof ljacqu.status.optionOs === 'undefined') {
+        addRunOptions(['PC/Mac/PS3/Xbox 360', 'Wii', 'PS2']);
+        return false;
+      } else {
+        return getUnderworldLinks();
+      }
     } else if (ljacqu.status.game === 'tomb9') {
       // Only select links starting with "Area", and "Shantytown" (part 2)
       return $('[class^="walk-table"] a[href^="walks/"]')
@@ -149,7 +202,7 @@ ljacqu.game = function() {
   };
 
   return {
-    detectGameAndMode: detectGameAndMode,
+    detectModeAndGame: detectModeAndGame,
     getWalkthroughLinks: getWalkthroughLinks
   };
 }();
@@ -266,7 +319,7 @@ ljacqu.text = function() {
       cardinalMatches[ cardinalMatches.length - 1 ] : entity;
     noCardinalName = pluralToSingular(noCardinalName, entityList);
     if (noCardinalName !== entity) {
-      console.log(entity + " renamed to " + noCardinalName);
+      console.log(entity + ' renamed to ' + noCardinalName);
       if (typeof entityList[noCardinalName] !== 'undefined') {
        entityList[noCardinalName] += entityList[entity];
       } else {
@@ -381,10 +434,11 @@ ljacqu.container = function() {
 
   var getBaseElement = function() {
     // overview page has #wrap, single page has #LayoutDiv1
-    var base = ljacqu.status.mode === 'overview' ? $('#wrap') :
+    var base = ljacqu.status.mode === 'overview' ? $('#wrap') : 
       $('#LayoutDiv1');
     if (base.length === 0) {
-      if (window.location.href.indexOf('TR9walk') !== -1) {
+      // TODO: Remap each single ID to overview ID
+      if (ljacqu.status.game === 'TR9walk') {
         $('.gridContainer').prepend($('<div id="LayoutDiv1">'));
         return $('#LayoutDiv1');
       }
@@ -660,7 +714,7 @@ ljacqu.run = function() {
    *  processing (or empty for single page mode).
    */
   var processPage = function(source, aElem) {
-    for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
+    for (var i = 0; i < ljacqu.config.classesToAggregate.length; ++i) {
       var currentClass = ljacqu.config.classesToAggregate[i];
       var entities = ljacqu.text.fetchEntities(currentClass, source);
       ljacqu.display.displayEntities(entities, currentClass, aElem);
@@ -674,7 +728,12 @@ ljacqu.run = function() {
    * and numbers while the aggregator runs.
    */
   var initStatus = function() {
+    var modeAndGame = ljacqu.game.detectModeAndGame();
     ljacqu.status = {
+      /** The mode of the aggregator (overview or single) */
+      mode: modeAndGame[0],
+      /** The game of the page */
+      game: modeAndGame[1],
       /* Keeps track of what entity classes have content */
       classes: {},
       /* how many links were found for processing */
@@ -682,12 +741,40 @@ ljacqu.run = function() {
       /* how many pages have been processeed */
       handledLinks: 0
     };
-    ljacqu.game.detectGameAndMode();
+
     /* For overview mode: global total of all entries */
     ljacqu.total = {};
     var classes = ljacqu.config.classesToAggregate;
     for (var i = 0; i < classes.length; ++i) {
       ljacqu.total[ classes[i] ] = {};
+    }
+  };
+  
+  /**
+   * Converts a jQuery-selected a element into an aElem object, removing ending
+   * hashes from the URL (to equate e.g. /page.html and /page.html#level2)
+   * @param {jQuery} htmlLink The link to process
+   * @returns {aElem} Converted aElem object
+   */
+  var htmlLinkToAElem = function (htmlLink) {
+    var urlWithoutHash = htmlLink.attr('href').split('#')[0];
+    return {
+      url: urlWithoutHash,
+      text: htmlLink.text().replace(/\s{2,}/g, ' ')
+    };
+  };
+  
+  /**
+   * Appends a second title to the same container.
+   * @param {aElem} aElem The aElem object to add the title for
+   */
+  var addTitleToExistingContainer = function (aElem) {
+    var containerTitle = ljacqu.container.getContainer(aElem).find('h1');
+    // aggregator can be run many times, only append the additional title once
+    // --> the containers are permanent
+    if (containerTitle.text().indexOf(aElem.text) === -1) {
+      containerTitle.append('<span style="font-size: 0.8em"> + ' +
+        aElem.text + '</span>');
     }
   };
 
@@ -698,32 +785,27 @@ ljacqu.run = function() {
   var overviewPageRunner = function() {
     // all the links found to walkthroughs... some may link to the same page
     var foundHtmlLinks = ljacqu.game.getWalkthroughLinks();
+    if (typeof foundHtmlLinks === 'boolean') {
+      return;
+    }
     ljacqu.status.foundLinks = foundHtmlLinks.length;
     // object keeping track of all found URLs to prevent links/containers from
     // being created for the same page
     var foundUrls = {};
 
     $.each(foundHtmlLinks, function() {
-      var urlWithoutHash = $(this).attr('href').split('#')[0];
-      var aElem = {url: urlWithoutHash,
-        text: $(this).text().replace(/\s{2,}/g, ' ')};
+      var aElem = htmlLinkToAElem($(this));
 
-      if (typeof foundUrls[urlWithoutHash] !== 'undefined') {
-        var containerTitle = ljacqu.container.getContainer(aElem).find('h1');
-        // aggregator can be run many times, only append the additional title
-        // once --> the containers are permanent
-        if (containerTitle.text().indexOf(aElem.text) === -1) {
-          containerTitle.append('<span style="font-size: 0.8em"> + ' +
-            aElem.text + '</span>');
-        }
+      if (typeof foundUrls[aElem.url] !== 'undefined') {
+        addTitleToExistingContainer(aElem);
         ljacqu.status.handledLinks++;
         ljacqu.display.postProcess();
         return;
       }
       ljacqu.container.createContainer(aElem);
-      foundUrls[urlWithoutHash] = true;
+      foundUrls[aElem.url] = true;
 
-      $.get(urlWithoutHash, {}, function(data) {
+      $.get(aElem.url, {}, function(data) {
         // `data` is a string at this point but is parsed into a document if
         // used as the context in a selector. This loads images (and with the
         // wrong path at that) so we replace the tag with something else.
@@ -734,12 +816,12 @@ ljacqu.run = function() {
   };
 
   /**
-   * Ensure that the page is on tombraiders.net or www.tombraiders.net.
+   * Ensures that the page is on tombraiders.net or www.tombraiders.net.
    * @returns {boolean} True if the page is on tombraiders.net, false otherwise.
    */
   var checkWebsite = function() {
-    var isRightWebsite = window.location.href
-      .match(/^https?:\/\/(www\.)?tombraiders\.net(\/.*)?$/i);
+    var isRightWebsite = /^https?:\/\/(www\.)?tombraiders\.net(\/.*)?$/i
+      .test(window.location.href);
     if (!isRightWebsite) {
       ljacqu.display.displayError('You are not on ' +
         '<b><a href="http://tombraiders.net">tombraiders.net</a></b>');
