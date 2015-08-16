@@ -10,6 +10,7 @@ ljacqu.config = function() {
   /** Custom plural to singular forms. */
   var plurals = {
     'cat mummies': 'cat mummy',
+    enemies: 'enemy',
     'guard dog': 'dog',
     gunmen: 'gunman',
     'hk ammo': 'hk clips',
@@ -33,7 +34,9 @@ ljacqu.config = function() {
   var maximumEntryLength = 100;
 
   /**
-   * Returns the selector rule to extract all entities of the given class.
+   * Returns the selector rule to extract all entities of the given class. Limit
+   * to span tags so the same CSS class can be used on the result tables in
+   * single page mode, which looks nice.
    * @param {String} clazz The entity class to match
    * @returns {String} The jQuery selector string
    */
@@ -41,22 +44,11 @@ ljacqu.config = function() {
     return 'span.' + clazz;
   };
 
-  /**
-   * Returns the selector rule for all links on an overview page leading to the
-   * walkthrough pages.
-   * @returns {String} The jQuery selector string for all relevant <a> elements
-   */
-  var selectWalkthroughLinks = function() {
-    return '[class^="walk-table"] a[href^="walks/"]';
-  };
-
-
   return {
     classesToAggregate: classesToAggregate,
     maximumEntryLength: maximumEntryLength,
     plurals: plurals,
-    selectEntities: selectEntities,
-    selectWalkthroughLinks: selectWalkthroughLinks
+    selectEntities: selectEntities
   };
 }();
 
@@ -108,6 +100,43 @@ ljacqu.loadJquery = function(whenLoaded) {
     whenLoaded();
   }
 };
+
+/* ---------------------------------------------------
+ * Game-specific data
+ * --------------------------------------------------- */
+ljacqu.game = function() {
+  
+  var detectGame = function () {
+    var pattern;
+    if (ljacqu.status.mode === 'single') {
+      pattern = /\/stella\/walks\/(.*?)\/.*?\.html.*?/;
+    } else {
+      pattern = /\/stella\/(.*?)\.html.*?/;
+    }
+    var urlMatches = window.location.href.match(pattern);
+    if (null === urlMatches) {
+      throw new Error('Could not infer game from URL!');
+    }
+    ljacqu.status.game = urlMatches[1];
+  };
+  
+  /**
+   * Returns all links on an overview page leading to the walkthrough pages.
+   * @returns {jQuery} All relevant <a> elements
+   */
+  var getWalkthroughLinks = function () {
+    if (ljacqu.status.game === 'tomb9') {
+      return $('[class^="walk-table"] a[href^="walks/"]')
+        .filter(':contains("Area"), :contains("Shantytown")');
+    }
+    return $('[class^="walk-table"] a[href^="walks/"]');
+  };
+  
+  return {
+    detectGame: detectGame,
+    getWalkthroughLinks: getWalkthroughLinks
+  };
+}();
 
 
 /* ---------------------------------------------------
@@ -304,7 +333,6 @@ ljacqu.text = function() {
   var fetchEntities = function(clazz, source) {
     source = source || document;
     var types = {};
-    // Specifying span allows us to use the same class on <td>, which looks cool
     $.each($(ljacqu.config.selectEntities(clazz), source), function() {
       var entry = getSemanticInfo($(this).text());
       if (entry.name === '') {
@@ -340,7 +368,7 @@ ljacqu.container = function() {
     var base = ljacqu.status.mode === 'overview' ? $('#wrap') :
       $('#LayoutDiv1');
     if (base.length === 0) {
-      if (location.href.indexOf('TR9walk') !== -1) {
+      if (window.location.href.indexOf('TR9walk') !== -1) {
         $('.gridContainer').prepend($('<div id="LayoutDiv1">'));
         return $('#LayoutDiv1');
       }
@@ -616,7 +644,6 @@ ljacqu.run = function() {
    *  processing (or empty for single page mode).
    */
   var processPage = function(source, aElem) {
-    //source = source || false;
     for (var i = 0; i < ljacqu.config.classesToAggregate.length; i++) {
       var currentClass = ljacqu.config.classesToAggregate[i];
       var entities = ljacqu.text.fetchEntities(currentClass, source);
@@ -642,6 +669,7 @@ ljacqu.run = function() {
       /* how many pages have been processeed */
       handledLinks: 0
     };
+    ljacqu.game.detectGame();
     /* For overview mode: global total of all entries */
     ljacqu.total = {};
     var classes = ljacqu.config.classesToAggregate;
@@ -656,7 +684,7 @@ ljacqu.run = function() {
    */
   var overviewPageRunner = function() {
     // all the links found to walkthroughs... some may link to the same page
-    var foundHtmlLinks = $(ljacqu.config.selectWalkthroughLinks());
+    var foundHtmlLinks = ljacqu.game.getWalkthroughLinks();
     ljacqu.status.foundLinks = foundHtmlLinks.length;
     // object keeping track of all found URLs to prevent links/containers from
     // being created for the same page
@@ -719,7 +747,7 @@ ljacqu.loadJquery(function() {
   if (!ljacqu.run.checkWebsite()) {
     return;
   }
-  if ($(ljacqu.config.selectWalkthroughLinks()).length > 0) {
+  if (window.location.href.indexOf('/stella/walks/') === -1) {
     ljacqu.run.initStatus('overview');
     ljacqu.run.overviewPageRunner();
   } else {

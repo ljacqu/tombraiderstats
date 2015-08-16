@@ -32,6 +32,10 @@ http://tombraiders.net/stella/walks/TRGMwalk/05vegas.html
 "goon with the club", "nasty guy with the club", "enemy with a club", "4 club-
 wielding goons" virtually all the same type of enemy
 
+Overview http://www.tombraiders.net/stella/tomb2.html
+guy with a gun, guy with a shotgun, guy with the club, guy with the gun,
+guys with clubs, guys with guns, ...
+
 http://tombraiders.net/stella/walks/TRLAwalk/tr3gold5.html
 "2 more boxes of shells" 
 
