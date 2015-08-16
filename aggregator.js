@@ -105,35 +105,51 @@ ljacqu.loadJquery = function(whenLoaded) {
  * Game-specific data
  * --------------------------------------------------- */
 ljacqu.game = function() {
-  
-  var detectGame = function () {
-    var pattern;
-    if (ljacqu.status.mode === 'single') {
-      pattern = /\/stella\/walks\/(.*?)\/.*?\.html.*?/;
-    } else {
-      pattern = /\/stella\/(.*?)\.html.*?/;
-    }
-    var urlMatches = window.location.href.match(pattern);
-    if (null === urlMatches) {
-      throw new Error('Could not infer game from URL!');
-    }
-    ljacqu.status.game = urlMatches[1];
+
+  var setGameMode = function (name, pattern) {
+    ljacqu.status.mode = name;
+    ljacqu.status.game = window.location.href.match(pattern)[1];
   };
-  
+
+  var detectGameAndMode = function () {
+    var overviewPattern = /\/stella\/([a-z0-9\-_]+)\.html/i;
+    var singlePattern = /\/stella\/walks\/([a-z0-9\-_]+)\/.*?\.html/i;
+    var url = window.location.href;
+
+    if (overviewPattern.test(url)) {
+      setGameMode('overview', overviewPattern);
+    } else if (singlePattern.test(url)) {
+      setGameMode('single', singlePattern);
+    } else {
+      console.error('Did not recognize URL');
+      ljacqu.display.displayError('Please make sure you are on a walkthrough ' +
+        'or overview page!');
+    }
+  };
+
   /**
    * Returns all links on an overview page leading to the walkthrough pages.
    * @returns {jQuery} All relevant <a> elements
    */
   var getWalkthroughLinks = function () {
-    if (ljacqu.status.game === 'tomb9') {
+    if (ljacqu.status.game === 'tomb4') {
+      // Do not include "Cairo Overview" (note: text has two spaces)
+      return $('[class^="walk-table"] a[href^="walks/"]')
+        .filter(':not(:contains("Cairo  Overview"))');
+    } else if (ljacqu.status.game === 'tomb7') {
+      // Add "Croft Manor" link, remove "Time Trial Tips"
+      return $('a:contains("Croft Manor"), [class^="walk-table"] ' +
+        'a[href^="walks/"]').filter(':not(:contains("Time Trial Tips"))');
+    } else if (ljacqu.status.game === 'tomb9') {
+      // Only select links starting with "Area", and "Shantytown" (part 2)
       return $('[class^="walk-table"] a[href^="walks/"]')
         .filter(':contains("Area"), :contains("Shantytown")');
     }
     return $('[class^="walk-table"] a[href^="walks/"]');
   };
-  
+
   return {
-    detectGame: detectGame,
+    detectGameAndMode: detectGameAndMode,
     getWalkthroughLinks: getWalkthroughLinks
   };
 }();
@@ -372,7 +388,7 @@ ljacqu.container = function() {
         $('.gridContainer').prepend($('<div id="LayoutDiv1">'));
         return $('#LayoutDiv1');
       }
-      throw new Error('Could not get base element!'); 
+      throw new Error('Could not get base element!');
     }
     return base;
   };
@@ -518,7 +534,7 @@ ljacqu.display = function() {
         '<td style="text-align: right">' + total + '</td></tr>');
     }
   };
-  
+
   /**
    * Styles a table showing the aggregated results of an entity type. In single
    * page mode, it adds the entity class to the left-hand side; in overview mode
@@ -656,12 +672,9 @@ ljacqu.run = function() {
   /**
    * Initializes the ljacqu.status object, which keeps track of certain states
    * and numbers while the aggregator runs.
-   * @param {String} mode The running mode (overview|single)
    */
-  var initStatus = function(mode) {
+  var initStatus = function() {
     ljacqu.status = {
-      /* Registers the mode we are in */
-      mode: mode,
       /* Keeps track of what entity classes have content */
       classes: {},
       /* how many links were found for processing */
@@ -669,7 +682,7 @@ ljacqu.run = function() {
       /* how many pages have been processeed */
       handledLinks: 0
     };
-    ljacqu.game.detectGame();
+    ljacqu.game.detectGameAndMode();
     /* For overview mode: global total of all entries */
     ljacqu.total = {};
     var classes = ljacqu.config.classesToAggregate;
@@ -747,11 +760,10 @@ ljacqu.loadJquery(function() {
   if (!ljacqu.run.checkWebsite()) {
     return;
   }
-  if (window.location.href.indexOf('/stella/walks/') === -1) {
-    ljacqu.run.initStatus('overview');
+  ljacqu.run.initStatus();
+  if (ljacqu.status.mode === 'overview') {
     ljacqu.run.overviewPageRunner();
   } else {
-    ljacqu.run.initStatus('single');
     ljacqu.run.processPage();
   }
 });
