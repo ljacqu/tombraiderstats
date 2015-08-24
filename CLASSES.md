@@ -3,21 +3,21 @@ CSS Classes
 The walkthroughs on _tombraiders.net_ use different colors for different types 
 of entities, e.g. enemies are shown in orange color and items are green.
 
-These colors are defined with CSS classes in the walkthrough pages. For example,
-an enemy may be written in the following way in the HTML markup:
+These colors are defined with CSS classes in the HTML of walkthrough pages. 
+For example, an enemy may be mentioned in the following way in the HTML markup:
 
 ```html
 A <span class="enemy">dog</span> emerges
 ```
 
 This is how the aggregator recognizes the entities on a page – it searches for 
-the use of special CSS classes.
+the use of specific CSS classes.
 
-Below, we show which CSS classes are used and what entity type they stand for.
+This page contains a list of CSS classes and the entity type they stand for.
 
 Basic classes
 -------------
-Present in all walkthroughs.
+Classes present in all walkthroughs.
 
 Class name | Example
 ---------- | -------------

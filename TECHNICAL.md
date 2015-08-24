@@ -1,14 +1,12 @@
 Technical Description
 =====================
-This page contains some technical details about the aggregator.
+This page contains some technical details about the aggregator. It is written 
+in JavaScript and uses the [jQuery library](http://jquery.com/) to work with 
+the DOM easily.
 
-It is written in JavaScript and uses the [jQuery library](http://jquery.com/)
-to work with the DOM (extracting specific elements and manipulating the DOM
-to display the results).
-
-You can copy the entire contents of _aggregator.js_ and run it in your 
-browser's the console to see the latest features and changes. The bookmarklet 
-code loads a version on GitHub pages which isn't updated after every change.
+You can copy the entire contents of _aggregator.js_ and run it in your browser's
+console to see the latest features and changes. The bookmarklet code loads a 
+version from GitHub pages which isn't always updated after every change.
 
 Terms
 -----
@@ -27,12 +25,12 @@ a <span class="enemy">thug</span> will attack you.
 The HTML fragment above contains two entities: "shotgun" and "thug", whose class
 is "item" and "enemy", respectively.
 
-The aggregator can be run on two different page types: on a specific walkthrough
-page where it will show the entities for that level, or on an overview page for
-a Tomb Raider game (containing links to the game's walkthroughs, such as the
-[Tomb Raider Anniversary Overview](http://tombraiders.net/stella/anniversary.html)).
-In the latter case, it computes statics for each level by loading the 
-walkthrough pages before computing a total over all levels.
+The aggregator can be run on two different types of pages: on a specific 
+walkthrough page where it will show the entities for that level, or on an 
+overview page for a Tomb Raider game (containing links to the game's 
+walkthroughs, such as the [Tomb Raider Anniversary Overview](http://tombraiders.net/stella/anniversary.html)).
+In the latter case, it computes statistics for each level by loading every
+walkthrough page before computing the total over all levels.
 
 For some tasks, it is important to know on which type of page the aggregator is
 being run, and so the first case is referred to as  **_single page mode_**, and 
@@ -42,15 +40,16 @@ Structure
 ---------
 The aggregator is contained within the file `aggregator.js`. All of its
 functions are saved in the variable `ljacqu`, which is an object with various
-keys as to separate the functions by topical subject, only exposing the
-functions externally that are meant to be called from other topical parts.
+keys as to separate the functions by "topics."
 
-The following sections exist:
+The following topics exist:
 
 - `config` – contains various configuration options
 - `status` – keeps track of various information for when the aggregator runs
 - `total` – stores data for the global total in overview mode
 - `loadJquery` – single function to load jQuery when it isn't present
+- `game` – game-specific functions (e.g. to handle differences on specific 
+ pages)
 - `text` – extracts the entities from a page and tries to understand the
  number of referenced entities
 - `container` – manages the additional tables to display the results in
@@ -77,7 +76,7 @@ to that walkthrough page.
 var aElem = {url: 'link/to/walkthrough.html', text: 'Level 1: Something'};
 // Generate an aElem object from a jQuery-matched <a> tag:
 var matchedLink = $('a.someclass');
-var newAElem = { url: matchedLink.attr('href'), text: matchedLink.text() };
+var newAElem = {url: matchedLink.attr('href'), text: matchedLink.text()};
 ```
 **`entityList`**
 <br />Is never used as a type in the documentation (simply `Object` or `Array` 
@@ -113,10 +112,6 @@ is more for myself to remember things than for anything else.
 
 Tools used
 ----------
-The aggregator code is regularly run through [JSHint](http://jshint.com/), which
-analyzes the code and then offers information about the code's complexity and
-where best practices may have been ignored.
-
-[JSCompress](http://jscompress.com/) to minify the code, which is then uploaded
-to GitHub pages (where the bookmarklet code will load the aggregator's code 
-from).
+The aggregator code is regularly run through [JSHint](http://jshint.com/). The
+bookmarklet loads a minimized version of the aggregator, which is created with
+[JSCompress](http://jscompress.com/).

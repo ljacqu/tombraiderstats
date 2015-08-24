@@ -28,4 +28,4 @@ the text
 
 Status
 ------
-Working, and still being actively improved
+Working and being improved continuously
