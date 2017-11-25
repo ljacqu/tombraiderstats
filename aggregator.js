@@ -69,7 +69,7 @@ ljacqu.total = {
 /**
  * Waits on jQuery to load. Based on
  * <http://neighborhood.org/core/sample/jquery/append-to-head.htm>.
- * @param {Callback} whenLoaded The function to execute once jQuery has loaded.
+ * @param {Function} whenLoaded The function to execute once jQuery has loaded.
  *  This function is also called when jQuery did not have to be loaded manually,
  *  i.e. the function is always called exactly once (unless jQuery has to be
  *  loaded and there was an error).
@@ -115,7 +115,7 @@ ljacqu.game = function() {
     var overviewPattern = /\/stella\/([a-z0-9\-_]+)\.html/i;
     var singlePattern = /\/stella\/walks\/([a-z0-9\-_]+)\/.*?\.html/i;
     var url = window.location.href;
-    
+
     var matches = url.match(overviewPattern);
     if (null !== matches) {
       return ['overview', matches[1]];
@@ -127,24 +127,23 @@ ljacqu.game = function() {
     ljacqu.display.displayError('Please make sure you are on a walkthrough or overview page!');
     throw new Error('Did not recognize URL');
   };
-  
+
   var addRunOptions = function (options) {
     var infodiv = $('h2:contains("Walkthrough")').next('div');
     infodiv.prepend($('<table id="agg_options">'));
-    $('#agg_options').append('<tr><td colspan="3">Please click on the OS ' +
-      ' to get the walkthroughs for. <span class="em4" id="agg_click_msg">' + 
-      'Click to select</span></td></tr>');
+    var aggOptions = $('#agg_options');
+    aggOptions.append('<tr><td colspan="3">Please click on the OS to get the walkthrough for. ' +
+      '<span class="em4" id="agg_click_msg">Click to select</span></td></tr>');
     $('#agg_click_msg').hide();
-    $('#agg_options').append($('<tr>'));
+    aggOptions.append($('<tr>'));
     for (var i = 0; i < options.length; i++) {
-      $('#agg_options tr:last').append('<td><span class="em5" ' +
-        'style="font-weight: bold" title="Click to select">' + options[i] +
-        '</span></td>');
-      var cell = $('#agg_options tr:last td:eq(' + i + ')');
+      aggOptions.find('tr:last').append('<td><span class="em5" style="font-weight: bold" title="Click to select">' +
+        options[i] + '</span></td>');
+      var cell = aggOptions.find('tr:last td:eq(' + i + ')');
       cell.on('click', (function (i) {
         return function () {
           ljacqu.status.optionOs = options[i];
-          $('#agg_options').remove();
+          aggOptions.remove();
           ljacqu.run.overviewPageRunner();
         };
       })(i));
@@ -157,14 +156,14 @@ ljacqu.game = function() {
       });
     }
   };
-  
+
   var getUnderworldLinks = function () {
     var os = ljacqu.status.optionOs;
     var links = $('[class^="walk-table"] a[href^="walks/"]')
       .filter(':contains("' + os + '")');
 
     $.each(links, function (key) {
-      var linkText = $(this).closest('p').text().match(/^(.*?)\(/);      
+      var linkText = $(this).closest('p').text().match(/^(.*?)\(/);
       links[key].text = linkText[1].trim();
     });
 
@@ -261,8 +260,7 @@ ljacqu.text = function() {
     }
     // match "three thugs"
     var literalNumbers = ['one', 'two', 'three', 'four', 'five', 'six'];
-    var literalRegexp = new RegExp('^(' + literalNumbers.join('|') + ')' +
-      '\\s(.*?)$');
+    var literalRegexp = new RegExp('^(' + literalNumbers.join('|') + ')' + '\\s(.*?)$');
     var literalMatch = extractedName.match(literalRegexp);
     if (literalMatch) {
       // push 0 to front so [1] -> one, [2] -> two, etc.
@@ -327,8 +325,7 @@ ljacqu.text = function() {
    */
   var mergeEntityEntry = function(entity, entityList) {
     var cardinalMatches = entity.match(getCardinalRegexp());
-    var noCardinalName = cardinalMatches ?
-      cardinalMatches[ cardinalMatches.length - 1 ] : entity;
+    var noCardinalName = cardinalMatches ? cardinalMatches[ cardinalMatches.length - 1 ] : entity;
     noCardinalName = pluralToSingular(noCardinalName, entityList);
     if (noCardinalName !== entity) {
       console.log(entity + ' renamed to ' + noCardinalName);
@@ -416,12 +413,12 @@ ljacqu.text = function() {
     var types = {};
     $.each($(ljacqu.config.selectEntities(clazz), source), function() {
       var entry = getSemanticInfo($(this).text());
-      if (entry.name === '') {
-        return;
-      } else if (typeof types[entry.name] === 'undefined') {
-        types[entry.name] = entry.number;
-      } else {
-        types[entry.name] += entry.number;
+      if (entry.name !== '') {
+        if (typeof types[entry.name] === 'undefined') {
+          types[entry.name] = entry.number;
+        } else {
+          types[entry.name] += entry.number;
+        }
       }
     });
 
@@ -446,8 +443,7 @@ ljacqu.container = function() {
 
   var getBaseElement = function() {
     // overview page has #wrap, single page has #LayoutDiv1
-    var base = ljacqu.status.mode === 'overview' ? $('#wrap') : 
-      $('#LayoutDiv1');
+    var base = ljacqu.status.mode === 'overview' ? $('#wrap') : $('#LayoutDiv1');
     if (base.length === 0) {
       // TODO: Remap each single ID to overview ID
       if (ljacqu.status.game === 'TR9walk') {
@@ -471,14 +467,15 @@ ljacqu.container = function() {
    */
   var createContainer = function(aElem) {
     var id = getContainerId(aElem.url);
-    if ($('#' + id).length !== 0) {
-      return $('#' + id);
+    var idElem = $('#' + id);
+    if (idElem.length !== 0) {
+      return idElem;
     }
-    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text +
-      '</h1></div>');
+
+    getBaseElement().before('<div id="' + id + '"><h1>' + aElem.text + '</h1></div>');
     var container = $('#' + id);
 
-    $('#' + id).find('h1').click(function() {
+    container.find('h1').click(function() {
       if (container.find('div:visible').length > 0) {
         container.find('div').hide();
       } else {
@@ -761,7 +758,7 @@ ljacqu.run = function() {
       ljacqu.total[ classes[i] ] = {};
     }
   };
-  
+
   /**
    * Converts a jQuery-selected a element into an aElem object, removing ending
    * hashes from the URL (to equate e.g. /page.html and /page.html#level2)
@@ -775,7 +772,7 @@ ljacqu.run = function() {
       text: htmlLink.text().replace(/\s{2,}/g, ' ')
     };
   };
-  
+
   /**
    * Appends a second title to the same container.
    * @param {aElem} aElem The aElem object to add the title for
