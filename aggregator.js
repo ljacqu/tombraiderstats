@@ -124,8 +124,7 @@ ljacqu.game = function() {
     if (null !== matches) {
       return ['single', matches[1]];
     }
-    ljacqu.display.displayError('Please make sure you are on a walkthrough ' +
-      'or overview page!');
+    ljacqu.display.displayError('Please make sure you are on a walkthrough or overview page!');
     throw new Error('Did not recognize URL');
   };
   
@@ -178,14 +177,24 @@ ljacqu.game = function() {
    *  boolean false if an additional option must be selected by the user first
    */
   var getWalkthroughLinks = function () {
-    if (ljacqu.status.game === 'tomb4') {
+    if (ljacqu.status.game === 'tomb1') {
+      return $('a[href^="walks/TR1walk/"]');
+    } else if (ljacqu.status.game === 'tomb2') {
+      return $('a[href^="walks/TR2walk/"]');
+    } else if (ljacqu.status.game === 'tomb3') {
+      return $('a[href^="walks/TR3walk/"]').filter(':not(:contains("BUG WARNINGS"))');
+    } else if (ljacqu.status.game === 'lostartifact') {
+      return $('a[href^="walks/TRLAwalk/"]').filter(':not(:contains("Installing"))');
+    } else if (ljacqu.status.game === 'tomb4') {
       // Do not include "Cairo Overview" (note: text has two spaces)
-      return $('[class^="walk-table"] a[href^="walks/"]')
-        .filter(':not(:contains("Cairo  Overview"))');
+      return $('a[href^="walks/TR4walk/"]').filter(':not(:contains("Cairo  Overview"))');
+    } else if (ljacqu.status.game === 'tomb5') {
+      return $('a[href^="walks/TR5walk/"]').filter(':contains("Level")');
     } else if (ljacqu.status.game === 'tomb7') {
-      // Add "Croft Manor" link, remove "Time Trial Tips"
-      return $('a:contains("Croft Manor"), [class^="walk-table"] ' +
-        'a[href^="walks/"]').filter(':not(:contains("Time Trial Tips"))');
+      // Match with TR7walk/0 to match only pages such as 04ghana.html and not stuff like rewards.html
+      return $('a:contains("Croft Manor"), a[href^="walks/TR7walk/0"]');
+    } else if (ljacqu.status.game === 'anniversary') {
+      return $('a[href^="walks/TRAwalk/"]').filter(':contains("Level"), :contains("Croft Manor")');
     } else if (ljacqu.status.game === 'tomb8') {
       if (typeof ljacqu.status.optionOs === 'undefined') {
         addRunOptions(['PC/Mac/PS3/Xbox 360', 'Wii', 'PS2']);
@@ -195,9 +204,12 @@ ljacqu.game = function() {
       }
     } else if (ljacqu.status.game === 'tomb9') {
       // Only select links starting with "Area", and "Shantytown" (part 2)
-      return $('[class^="walk-table"] a[href^="walks/"]')
-        .filter(':contains("Area"), :contains("Shantytown")');
+      return $('[class^="walk-table"] a[href^="walks/"]').filter(':contains("Area"), :contains("Shantytown")');
+    } else if (ljacqu.status.game === 'tomb10') {
+      return $('a[href^="walks/TR10walk/"]').filter('a[href^="walks/TR10walk/0"], a[href^="walks/TR10walk/1"]').
+          filter(':not(:contains("100%"))');
     }
+    // goldwalk, goldmask, tomb6
     return $('[class^="walk-table"] a[href^="walks/"]');
   };
 
@@ -786,8 +798,10 @@ ljacqu.run = function() {
     // all the links found to walkthroughs... some may link to the same page
     var foundHtmlLinks = ljacqu.game.getWalkthroughLinks();
     if (typeof foundHtmlLinks === 'boolean') {
+      console.log('Aborted link retrieval');
       return;
     }
+    console.log('Found ' + foundHtmlLinks.size() + ' links');
     ljacqu.status.foundLinks = foundHtmlLinks.length;
     // object keeping track of all found URLs to prevent links/containers from
     // being created for the same page
@@ -823,8 +837,7 @@ ljacqu.run = function() {
     var isRightWebsite = /^https?:\/\/(www\.)?tombraiders\.net(\/.*)?$/i
       .test(window.location.href);
     if (!isRightWebsite) {
-      ljacqu.display.displayError('You are not on ' +
-        '<b><a href="http://tombraiders.net">tombraiders.net</a></b>');
+      ljacqu.display.displayError('You are not on <b><a href="http://tombraiders.net">tombraiders.net</a></b>');
     }
     return isRightWebsite;
   };
